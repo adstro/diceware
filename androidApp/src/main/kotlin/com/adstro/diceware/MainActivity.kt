@@ -129,18 +129,24 @@ class MainActivity : ComponentActivity() {
                             val library = generator.library
                             val wordLists by library.wordLists.collectAsStateWithLifecycle()
                             val importState by library.importState.collectAsStateWithLifecycle()
+                            val effUpdateState by library.effUpdateState.collectAsStateWithLifecycle()
                             val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                                 uri?.let(viewModel::import)
                             }
                             WordListsScreen(
                                 wordLists,
                                 importState,
+                                effUpdateState,
                                 onNavigateUp = { backStack.removeLastOrNull() },
                                 onImport = { pickFile.launch(arrayOf("text/*")) },
                                 onCancelImport = library::cancelImport,
                                 onDismissImportResult = library::dismissImportResult,
                                 onRename = library::rename,
                                 onDelete = library::delete,
+                                onCheckForUpdates = viewModel::checkForEffUpdates,
+                                onApplyUpdate = library::applyEffUpdate,
+                                onDismissUpdate = library::dismissEffUpdate,
+                                onRestoreBundled = library::restoreBundledEffWordLists,
                             )
                         }
                         entry<DiceEntryRoute> {
@@ -185,6 +191,11 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         return true
+    }
+
+    /** Only ever called from the user's tap on "Check for updates". */
+    fun checkForEffUpdates() {
+        viewModelScope.launch { generator.library.checkForEffUpdates() }
     }
 
     private fun nameAndSize(resolver: ContentResolver, uri: Uri): Pair<String, Long> = runCatching {
