@@ -6,7 +6,9 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -27,6 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 import androidx.compose.ui.unit.dp
 
 @RunWith(AndroidJUnit4::class)
@@ -43,7 +46,8 @@ class GeneratorScreenTest {
     @Before
     fun resetSettings() {
         val generator = ViewModelProvider(rule.activity)[GeneratorViewModel::class.java].generator
-        rule.waitUntil { generator.state.value != GeneratorState.Loading }
+        // waitUntil alone may not run the main looper the Generator resumes on, so idle it each time.
+        rule.waitUntil(5_000) { rule.waitForIdle(); generator.state.value != GeneratorState.Loading }
         rule.runOnUiThread {
             val defaults = PassphraseOptions()
             generator.setWordCount(defaults.wordCount)
@@ -59,7 +63,7 @@ class GeneratorScreenTest {
     /** Waits out the first read of saved settings, then returns the Passphrase on screen. */
     private fun shownPassphrase(): String {
         rule.waitUntil { rule.onAllNodesWithTag(PASSPHRASE_TAG).fetchSemanticsNodes().isNotEmpty() }
-        return rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("")
+        return rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[PassphraseText]
     }
 
     @Test
@@ -121,6 +125,48 @@ class GeneratorScreenTest {
         assertTrue(passphrase, Regex("([A-Z][a-z-]* ){5}[A-Z][a-z-]*[0-9][!@#$%&*\\-_+=?]").matches(passphrase))
         // 77.5 + log₂10 + log₂12.
         rule.onNodeWithText("Strength: 84.5 bits").assertExists()
+    }
+
+    @Test
+    fun eachWordIsAnnouncedOnItsOwnAndSpellOutReadsEveryCharacter() {
+        rule.runOnUiThread {
+            rule.activity.setContent {
+                DicewareTheme {
+                    GeneratorScreen(GeneratorState.Ready("Ab-zoom7!", 20.0, listOf("Ab", "zoom")), onRegenerate = {}, onCopy = {}, onWordLists = {}, onAbout = {})
+                }
+            }
+        }
+
+        val parts = rule.onAllNodesWithTag(PASSPHRASE_PART_TAG)
+        assertEquals(
+            listOf("Ab", "zoom", "7", "!"),
+            parts.fetchSemanticsNodes().map { it.config[SemanticsProperties.ContentDescription].single() },
+        )
+        val spellOut = parts[1].fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            .single { it.label == rule.activity.getString(R.string.spell_out) }
+        rule.runOnUiThread { spellOut.action() }
+
+        rule.onNodeWithTag(SPELLED_OUT_TAG)
+            .assertContentDescriptionEquals("capital A, b, hyphen, z, o, o, m, 7, exclamation mark")
+    }
+
+    @Test
+    @Config(qualifiers = "w1280dp-h800dp")
+    fun onAnExpandedWidthWindowThePassphraseAndOptionsAreSideBySide() {
+        shownPassphrase()
+
+        val passphrase = rule.onNodeWithTag(PASSPHRASE_TAG).getBoundsInRoot()
+        val mode = rule.onNodeWithText(rule.activity.getString(R.string.mode)).getBoundsInRoot()
+        assertTrue("options at $mode, passphrase at $passphrase", mode.left >= passphrase.right)
+    }
+
+    @Test
+    fun onAPhoneTheOptionsAreBelowThePassphrase() {
+        shownPassphrase()
+
+        val passphrase = rule.onNodeWithTag(PASSPHRASE_TAG).getBoundsInRoot()
+        val mode = rule.onNodeWithText(rule.activity.getString(R.string.mode)).getBoundsInRoot()
+        assertTrue("options at $mode, passphrase at $passphrase", mode.top >= passphrase.bottom)
     }
 
     @Test

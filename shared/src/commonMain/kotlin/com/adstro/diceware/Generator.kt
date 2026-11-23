@@ -14,8 +14,23 @@ sealed interface GeneratorState {
     /** Saved settings are still being read; nothing is rolled until they are known. */
     data object Loading : GeneratorState
 
-    data class Ready(val passphrase: String, val strengthBits: Double) : GeneratorState {
+    /** [words] are the Words as shown in [passphrase], in order, for screen readers to announce one by one. */
+    data class Ready(val passphrase: String, val strengthBits: Double, val words: List<String>) : GeneratorState {
         val isWeak: Boolean get() = strengthBits < WEAK_BELOW_BITS
+
+        /** The Passphrase as a screen reader announces it, one part at a time: each Word, then each appended character. */
+        val parts: List<PassphrasePart>
+            get() {
+                val parts = mutableListOf<PassphrasePart>()
+                var start = 0
+                words.forEachIndexed { i, word ->
+                    val end = if (i < words.lastIndex) passphrase.indexOf(words[i + 1], start + word.length) else start + word.length
+                    parts += PassphrasePart(passphrase.substring(start, end), word)
+                    start = end
+                }
+                passphrase.substring(start).forEach { parts += PassphrasePart(it.toString(), it.toString()) }
+                return parts
+            }
     }
 
     /** Dice Mode: no Passphrase until the user has entered every Roll. */
@@ -24,6 +39,9 @@ sealed interface GeneratorState {
     /** Secure randomness failed, so no Passphrase is shown (never a weaker fallback). */
     data object RandomnessUnavailable : GeneratorState
 }
+
+/** Part of a Passphrase: [shown] is a Word with the Separator after it (or a digit or symbol), [spoken] just the Word. */
+data class PassphrasePart(val shown: String, val spoken: String)
 
 /** Strength below this many bits gets a warning. */
 const val WEAK_BELOW_BITS = 64.0
@@ -110,7 +128,7 @@ class Generator(
     private fun roll(options: PassphraseOptions): GeneratorState = try {
         val draft = Draft(options, selectedWordList(options))
         draft.build(dice::roll)
-        GeneratorState.Ready(draft.passphrase, draft.strengthBits)
+        GeneratorState.Ready(draft.passphrase, draft.strengthBits, draft.words.toList())
     } catch (e: RandomnessUnavailableException) {
         GeneratorState.RandomnessUnavailable
     }
@@ -126,7 +144,7 @@ class Generator(
         var used = 0
         try {
             draft.build { enteredDice.getOrNull(used++) ?: throw NeedMoreDice }
-            mutableState.value = GeneratorState.Ready(draft.passphrase, draft.strengthBits)
+            mutableState.value = GeneratorState.Ready(draft.passphrase, draft.strengthBits, draft.words.toList())
         } catch (e: NeedMoreDice) {
             mutableState.value = GeneratorState.AwaitingDice
         }
