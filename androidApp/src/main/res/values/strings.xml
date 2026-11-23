@@ -15,6 +15,9 @@
     <string name="capitalise">Capitalise each Word</string>
     <string name="append_digit">Add a digit</string>
     <string name="append_symbol">Add a symbol</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Passphrase copied</string>
+    <string name="passphrase_clip_label">Passphrase</string>
     <string name="more_options">More options</string>
     <string name="navigate_up">Navigate up</string>
     <string name="about">About</string>
