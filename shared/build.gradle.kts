@@ -20,7 +20,8 @@ kotlin {
     }
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.coroutines.core)
+            // api: screen state is exposed to the apps as StateFlow.
+            api(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

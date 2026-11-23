@@ -1,0 +1,90 @@
+package com.adstro.diceware
+
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+
+const val PASSPHRASE_TAG = "passphrase"
+
+@Composable
+fun DicewareTheme(content: @Composable () -> Unit) {
+    val dark = isSystemInDarkTheme()
+    val colors = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (dark) dynamicDarkColorScheme(LocalContext.current) else dynamicLightColorScheme(LocalContext.current)
+        dark -> darkColorScheme()
+        else -> lightColorScheme()
+    }
+    MaterialTheme(colorScheme = colors, content = content)
+}
+
+/** Renders the core's Generator state; all logic lives in the shared core. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit) {
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        ) {
+            val readable = Modifier.widthIn(max = 600.dp).fillMaxWidth()
+            when (state) {
+                is GeneratorState.Ready -> Text(
+                    text = state.passphrase,
+                    // Monospace keeps l, 1 and I distinguishable.
+                    style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
+                    textAlign = TextAlign.Center,
+                    modifier = readable.testTag(PASSPHRASE_TAG),
+                )
+                GeneratorState.RandomnessUnavailable -> Text(
+                    text = stringResource(R.string.randomness_unavailable),
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = readable,
+                )
+            }
+            Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+        }
+    }
+}
+
+@Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)
+@Preview(name = "Tablet", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true)
+@Composable
+private fun GeneratorScreenPreview() {
+    DicewareTheme { GeneratorScreen(GeneratorState.Ready("abacus zoom kettle lilac boned tribute"), onRegenerate = {}) }
+}
