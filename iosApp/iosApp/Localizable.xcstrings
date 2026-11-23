@@ -1,0 +1,15 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Diceware" : {
+
+    },
+    "Roll new passphrase" : {
+
+    },
+    "Secure randomness is unavailable on this device, so no passphrase was generated." : {
+
+    }
+  },
+  "version" : "1.0"
+}
