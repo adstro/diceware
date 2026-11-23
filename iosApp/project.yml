@@ -16,6 +16,10 @@ targets:
       # The bundled EFF Word Lists live once at the repo root and are shared with Android.
       - path: ../wordlists/eff_large_wordlist.txt
         buildPhase: resources
+      - path: ../wordlists/eff_short_wordlist_1.txt
+        buildPhase: resources
+      - path: ../wordlists/eff_short_wordlist_2_0.txt
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.adstro.diceware

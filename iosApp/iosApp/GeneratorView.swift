@@ -6,6 +6,7 @@ struct GeneratorView: View {
     let generator: Generator
     @State private var state: GeneratorState?
     @State private var options: PassphraseOptions?
+    @State private var showingWordLists = false
     @State private var showingAbout = false
 
     var body: some View {
@@ -18,11 +19,13 @@ struct GeneratorView: View {
             .navigationTitle("Diceware")
             .toolbar {
                 Menu {
+                    Button("Word Lists") { showingWordLists = true }
                     Button("About") { showingAbout = true }
                 } label: {
                     Label("More options", systemImage: "ellipsis.circle")
                 }
             }
+            .navigationDestination(isPresented: $showingWordLists) { WordListsView(generator: generator) }
             .navigationDestination(isPresented: $showingAbout) { AboutView() }
         }
         .task {
@@ -80,6 +83,14 @@ struct OptionsControls: View {
     var body: some View {
         let range = PassphraseOptions.companion.WORD_COUNTS
         VStack(spacing: 12) {
+            LabeledContent("Word List") {
+                Picker(
+                    "Word List",
+                    selection: Binding(get: { options.wordList }, set: { generator.setWordList(wordList: $0) })
+                ) {
+                    ForEach(EffWordList.allCases, id: \.self) { Text(WordListsView.name(of: $0)).tag($0) }
+                }
+            }
             Stepper(
                 "Words: \(options.wordCount)",
                 value: Binding(get: { Int(options.wordCount) }, set: { generator.setWordCount(count: Int32($0)) }),
