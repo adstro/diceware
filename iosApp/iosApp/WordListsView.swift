@@ -3,7 +3,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Renders the core's Word Lists state: every Word List with its Word count and Strength per Word, the
-/// running import, and rename and delete for Custom Word Lists. Every action is forwarded to the core.
+/// running import, rename and delete for Custom Word Lists, and the user-triggered eff.org update check.
+/// Every action is forwarded to the core.
 struct WordListsView: View {
     let generator: Generator
     @State private var wordLists: [WordListInfo] = []
@@ -12,6 +13,7 @@ struct WordListsView: View {
     @State private var renaming: WordListInfo?
     @State private var newName = ""
     @State private var deleting: WordListInfo?
+    @State private var effUpdateState: EffUpdateState = EffUpdateStateIdle.shared
 
     private var library: WordListLibrary { generator.library }
 
@@ -26,6 +28,14 @@ struct WordListsView: View {
             ForEach(wordLists.indices, id: \.self) { index in
                 row(wordLists[index])
             }
+            Section {
+                let checking = effUpdateState is EffUpdateStateChecking
+                if checking { ProgressView("Checking eff.org…") }
+                Button("Check for updates") { Task { await DicewareApp.checkForEffUpdates(in: library) } }
+                    .disabled(checking)
+                Button("Restore bundled lists") { library.restoreBundledEffWordLists() }
+                    .disabled(checking || !wordLists.contains { $0.updated })
+            }
         }
         .navigationTitle("Word Lists")
         .toolbar {
@@ -38,6 +48,15 @@ struct WordListsView: View {
         }
         .alert(resultMessage ?? "", isPresented: Binding(get: { resultMessage != nil }, set: { _ in library.dismissImportResult() })) {
             Button("OK") { library.dismissImportResult() }
+        }
+        .alert(effMessage ?? "", isPresented: Binding(get: { effMessage != nil }, set: { _ in library.dismissEffUpdate() })) {
+            Button("OK") { library.dismissEffUpdate() }
+        }
+        .alert("Update EFF Word Lists?", isPresented: Binding(get: { effChanges != nil }, set: { _ in })) {
+            Button("Update") { library.applyEffUpdate() }
+            Button("Cancel", role: .cancel) { library.dismissEffUpdate() }
+        } message: {
+            Text((effChanges ?? []).flatMap(Self.summary(of:)).joined(separator: "\n"))
         }
         .alert("Rename Word List", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $newName)
@@ -60,6 +79,9 @@ struct WordListsView: View {
         }
         .task {
             for await newState in library.importState { importState = newState }
+        }
+        .task {
+            for await newState in library.effUpdateState { effUpdateState = newState }
         }
     }
 
@@ -99,18 +121,69 @@ struct WordListsView: View {
         }
     }
 
+    private var effChanges: [EffWordListChange]? {
+        (effUpdateState as? EffUpdateStateUpdateAvailable)?.changes
+    }
+
+    private var effMessage: String? {
+        switch onEnum(of: effUpdateState) {
+        case .upToDate: String(localized: "The EFF Word Lists are up to date.")
+        case .updated: String(localized: "The EFF Word Lists were updated.")
+        case .failed(let failed): Self.message(for: failed.error)
+        default: nil
+        }
+    }
+
+    /// What an update changes in one EFF Word List: Words added and removed, with a few of each.
+    static func summary(of change: EffWordListChange) -> [String] {
+        let name = name(of: change.wordList)
+        if change.wordsAdded == 0 && change.wordsRemoved == 0 {
+            return [String(localized: "\(name): the same Words, matched to different Rolls")]
+        }
+        func sample(_ words: [String], _ total: Int64) -> String {
+            (total > words.count ? words + ["…"] : words).joined(separator: ", ")
+        }
+        var lines = [String(localized: "\(name): \(change.wordsAdded.formatted()) Words added, \(change.wordsRemoved.formatted()) removed")]
+        if !change.sampleAdded.isEmpty { lines.append(String(localized: "Added: \(sample(change.sampleAdded, change.wordsAdded))")) }
+        if !change.sampleRemoved.isEmpty { lines.append(String(localized: "Removed: \(sample(change.sampleRemoved, change.wordsRemoved))")) }
+        return lines
+    }
+
+    /// Why an eff.org check failed; nothing was changed.
+    static func message(for error: EffUpdateError) -> String {
+        switch onEnum(of: error) {
+        case .offline:
+            String(localized: "Couldn’t reach eff.org. Check your connection and try again. Nothing was changed.")
+        case .httpStatus(let e):
+            String(localized: "eff.org answered with error \(e.code). Nothing was changed.")
+        case .tooLarge:
+            String(localized: "The download from eff.org was over 1 MB, so it was refused. Nothing was changed.")
+        case .redirected:
+            String(localized: "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
+        case .invalid(let e):
+            String(localized: "\(name(of: e.wordList)) from eff.org is not a valid Word List. \(message(for: e.error)) Nothing was changed.")
+        case .storageFailed:
+            String(localized: "There is not enough storage space for the update. Nothing was changed.")
+        }
+    }
+
     /// A Custom Word List's own name, or the EFF Word List's display name.
     static func name(of info: WordListInfo) -> String {
         if let name = info.name { return name }
-        switch info.id as? EffWordList {
-        case .short1: return String(localized: "EFF Short #1")
-        case .short2: return String(localized: "EFF Short #2")
-        default: return String(localized: "EFF Large")
+        return name(of: info.id as? EffWordList ?? .large)
+    }
+
+    static func name(of eff: EffWordList) -> String {
+        switch eff {
+        case .short1: String(localized: "EFF Short #1")
+        case .short2: String(localized: "EFF Short #2")
+        default: String(localized: "EFF Large")
         }
     }
 
     static func details(of info: WordListInfo) -> String {
-        String(localized: "\(info.wordCount.formatted()) Words · \(info.strengthPerWordBits, specifier: "%.1f") bits per Word")
+        let details = String(localized: "\(info.wordCount.formatted()) Words · \(info.strengthPerWordBits, specifier: "%.1f") bits per Word")
+        return info.updated ? String(localized: "\(details) · Updated from eff.org") : details
     }
 
     /// Why an import was rejected, naming the offending line.
