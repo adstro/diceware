@@ -40,7 +40,7 @@ struct WordListsTests {
             switch onEnum(of: state) {
             case .loading: continue
             case .ready(let ready): if until(ready) { return ready }
-            case .randomnessUnavailable: return nil
+            case .awaitingDice, .randomnessUnavailable: return nil
             }
         }
         return nil
