@@ -21,6 +21,7 @@ import okio.FileSystem
 import okio.ForwardingSource
 import okio.IOException
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.Source
 import okio.buffer
 import okio.use
@@ -147,6 +148,12 @@ class WordListLibrary(
         }
         importJob = job
         job.join()
+    }
+
+    /** [import] of the file at [path], for iOS, which hands the app file URLs. */
+    suspend fun importFile(path: String, fileName: String) {
+        val file = path.toPath()
+        import(fileName, fileSystem.metadataOrNull(file)?.size ?: -1) { fileSystem.source(file) }
     }
 
     fun cancelImport() {

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -235,7 +236,7 @@ fun createGenerator(
 ): Generator = Generator(
     librariesByPath.getOrPut(wordListsPath) {
         // The library outlives any one screen's scope: it is shared by every Generator in the process.
-        WordListLibrary({ EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } }, FileSystem.SYSTEM, wordListsPath.toPath(), MainScope())
+        WordListLibrary({ EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } }, FileSystem.SYSTEM, wordListsPath.toPath(), CoroutineScope(SupervisorJob()))
     },
     secureRandomBytes(),
     settingsByPath.getOrPut(settingsPath) { PreferenceDataStoreFactory.createWithPath { settingsPath.toPath() } },

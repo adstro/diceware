@@ -131,6 +131,6 @@ private fun GeneratorScreenPreview() {
             onCopy = {},
             onWordLists = {},
             onAbout = {},
-        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, {}, {}, it) }
+        ) { OptionsControls(PassphraseOptions(), listOf(WordListInfo(EffWordList.LARGE, null, 7776, 12.92)), {}, {}, {}, {}, {}, {}, {}, it) }
     }
 }
