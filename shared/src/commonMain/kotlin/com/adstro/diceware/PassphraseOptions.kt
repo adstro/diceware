@@ -24,7 +24,7 @@ data class PassphraseOptions(
     val capitalise: Boolean = false,
     val appendDigit: Boolean = false,
     val appendSymbol: Boolean = false,
-    val wordList: EffWordList = EffWordList.LARGE,
+    val wordList: WordListId = EffWordList.LARGE,
     val mode: Mode = Mode.RANDOM,
 ) {
     companion object {
@@ -37,6 +37,7 @@ private val separatorKey = stringPreferencesKey("separator")
 private val capitaliseKey = booleanPreferencesKey("capitalise")
 private val appendDigitKey = booleanPreferencesKey("append_digit")
 private val appendSymbolKey = booleanPreferencesKey("append_symbol")
+private const val CUSTOM_PREFIX = "custom:"
 private val wordListKey = stringPreferencesKey("word_list")
 private val modeKey = stringPreferencesKey("mode")
 
@@ -49,7 +50,10 @@ internal fun Preferences.toOptions(): PassphraseOptions {
         capitalise = this[capitaliseKey] ?: defaults.capitalise,
         appendDigit = this[appendDigitKey] ?: defaults.appendDigit,
         appendSymbol = this[appendSymbolKey] ?: defaults.appendSymbol,
-        wordList = EffWordList.entries.firstOrNull { it.name == this[wordListKey] } ?: defaults.wordList,
+        wordList = this[wordListKey]?.let { saved ->
+            EffWordList.entries.firstOrNull { it.name == saved }
+                ?: saved.removePrefix(CUSTOM_PREFIX).takeIf { saved.startsWith(CUSTOM_PREFIX) }?.let(::CustomWordListId)
+        } ?: defaults.wordList,
         mode = Mode.entries.firstOrNull { it.name == this[modeKey] } ?: defaults.mode,
     )
 }
@@ -60,6 +64,9 @@ internal fun PassphraseOptions.writeTo(preferences: androidx.datastore.preferenc
     preferences[capitaliseKey] = capitalise
     preferences[appendDigitKey] = appendDigit
     preferences[appendSymbolKey] = appendSymbol
-    preferences[wordListKey] = wordList.name
+    preferences[wordListKey] = when (val id = wordList) {
+        is EffWordList -> id.name
+        is CustomWordListId -> CUSTOM_PREFIX + id.sha256
+    }
     preferences[modeKey] = mode.name
 }
