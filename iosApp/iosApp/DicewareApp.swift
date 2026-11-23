@@ -10,13 +10,15 @@ struct DicewareApp: App {
         WindowGroup { GeneratorView(generator: generator).modifier(PrivacyCover()) }
     }
 
-    /// The core Generator over the bundled EFF Large Word List, rolled by SecRandomCopyBytes,
+    /// The core Generator over the bundled EFF Word Lists, rolled by SecRandomCopyBytes,
     /// with settings saved at `settingsPath`.
     static func makeGenerator(settingsPath: String = settingsPath) -> Generator {
-        // The list ships inside the app bundle, so a missing or unreadable file is a build error.
-        let url = Bundle.main.url(forResource: "eff_large_wordlist", withExtension: "txt")!
-        return GeneratorKt.createGenerator(
-            wordListText: try! String(contentsOf: url, encoding: .utf8),
+        GeneratorKt.createGenerator(
+            readBundled: { wordList in
+                // The lists ship inside the app bundle, so a missing or unreadable file is a build error.
+                let url = Bundle.main.url(forResource: wordList.fileName, withExtension: nil)!
+                return try! String(contentsOf: url, encoding: .utf8)
+            },
             settingsPath: settingsPath
         )
     }

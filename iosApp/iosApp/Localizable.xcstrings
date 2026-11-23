@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ Words · %.1f bits per Word" : {
+
+    },
     "About" : {
 
     },
@@ -23,6 +26,15 @@
 
     },
     "Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list) gives a number such as 43561, which picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device's secure random generator." : {
+
+    },
+    "EFF Large" : {
+
+    },
+    "EFF Short #1" : {
+
+    },
+    "EFF Short #2" : {
 
     },
     "Hyphen" : {
@@ -65,6 +77,12 @@
 
     },
     "What is Diceware?" : {
+
+    },
+    "Word List" : {
+
+    },
+    "Word Lists" : {
 
     },
     "Word lists" : {
