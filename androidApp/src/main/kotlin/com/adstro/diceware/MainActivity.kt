@@ -28,6 +28,9 @@ import kotlinx.serialization.Serializable
 data object GeneratorRoute : NavKey
 
 @Serializable
+data object WordListsRoute : NavKey
+
+@Serializable
 data object AboutRoute : NavKey
 
 class MainActivity : ComponentActivity() {
@@ -51,10 +54,12 @@ class MainActivity : ComponentActivity() {
                                 state,
                                 onRegenerate = generator::regenerate,
                                 onCopy = ::copySensitive,
+                                onWordLists = dropUnlessResumed { backStack.add(WordListsRoute) },
                                 onAbout = dropUnlessResumed { backStack.add(AboutRoute) },
                             ) { modifier ->
                                 OptionsControls(
                                     options,
+                                    onWordList = generator::setWordList,
                                     onWordCount = generator::setWordCount,
                                     onSeparator = generator::setSeparator,
                                     onCapitalise = generator::setCapitalise,
@@ -63,6 +68,10 @@ class MainActivity : ComponentActivity() {
                                     modifier = modifier,
                                 )
                             }
+                        }
+                        entry<WordListsRoute> {
+                            val wordLists by generator.wordLists.collectAsStateWithLifecycle()
+                            WordListsScreen(wordLists, onNavigateUp = { backStack.removeLastOrNull() })
                         }
                         entry<AboutRoute> { AboutScreen(onNavigateUp = { backStack.removeLastOrNull() }) }
                     },
@@ -74,9 +83,9 @@ class MainActivity : ComponentActivity() {
 
 /** Keeps the core's Generator, and so the shown Passphrase, across configuration changes. */
 class GeneratorViewModel(application: Application) : AndroidViewModel(application) {
-    // shortcut: reads the ~100 KB bundled list on the main thread at first launch; move off-main when lists get large.
+    // shortcut: reads the ~140 KB of bundled lists on the main thread at first launch; move off-main when lists get large.
     val generator: Generator = createGenerator(
-        application.assets.open("eff_large_wordlist.txt").bufferedReader().use { it.readText() },
+        { application.assets.open(it.fileName).bufferedReader().use { reader -> reader.readText() } },
         application.filesDir.resolve("diceware.preferences_pb").absolutePath,
         viewModelScope,
     )

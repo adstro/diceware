@@ -47,6 +47,7 @@ class GeneratorScreenTest {
             generator.setCapitalise(defaults.capitalise)
             generator.setAppendDigit(defaults.appendDigit)
             generator.setAppendSymbol(defaults.appendSymbol)
+            generator.setWordList(defaults.wordList)
         }
     }
 
@@ -130,7 +131,7 @@ class GeneratorScreenTest {
     fun showsAnErrorAndNoPassphraseWhenSecureRandomnessFails() {
         rule.runOnUiThread {
             rule.activity.setContent {
-                DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onCopy = {}, onAbout = {}) }
+                DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onCopy = {}, onWordLists = {}, onAbout = {}) }
             }
         }
 

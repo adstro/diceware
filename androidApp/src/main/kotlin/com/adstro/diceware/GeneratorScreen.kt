@@ -51,12 +51,12 @@ fun DicewareTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratorScreen(
-    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onAbout: () -> Unit,
+    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onWordLists: () -> Unit, onAbout: () -> Unit,
     options: @Composable (Modifier) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.app_name)) }, actions = { OverflowMenu(onAbout) })
+            TopAppBar(title = { Text(stringResource(R.string.app_name)) }, actions = { OverflowMenu(onWordLists, onAbout) })
         },
     ) { innerPadding ->
         Column(
@@ -116,7 +116,8 @@ private fun GeneratorScreenPreview() {
             GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5),
             onRegenerate = {},
             onCopy = {},
+            onWordLists = {},
             onAbout = {},
-        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, it) }
+        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, {}, it) }
     }
 }

@@ -35,12 +35,19 @@ import androidx.compose.ui.unit.dp
 
 /** The top app bar's overflow menu; the way to reach the app's secondary screens. */
 @Composable
-fun OverflowMenu(onAbout: () -> Unit) {
+fun OverflowMenu(onWordLists: () -> Unit, onAbout: () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.more_options))
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.word_lists)) },
+            onClick = {
+                expanded = false
+                onWordLists()
+            },
+        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.about)) },
             onClick = {

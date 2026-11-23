@@ -21,6 +21,12 @@
     <string name="more_options">More options</string>
     <string name="navigate_up">Navigate up</string>
     <string name="about">About</string>
+    <string name="word_list">Word List</string>
+    <string name="word_lists">Word Lists</string>
+    <string name="word_list_eff_large">EFF Large</string>
+    <string name="word_list_eff_short_1">EFF Short #1</string>
+    <string name="word_list_eff_short_2">EFF Short #2</string>
+    <string name="word_list_details">%1$,d Words · %2$.1f bits per Word</string>
     <string name="about_diceware_title">What is Diceware?</string>
     <string name="about_diceware_body">Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list) gives a number such as 43561, which picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device\'s secure random generator.</string>
     <string name="about_word_lists_title">Word lists</string>
