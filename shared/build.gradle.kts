@@ -28,6 +28,11 @@ kotlin {
     }
 }
 
+// NoWeakRandomnessTest reads the main sources, so a comment-only change must still re-run it.
+tasks.withType<Test>().configureEach {
+    inputs.files(fileTree("src") { include("*Main/**/*.kt") }).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 skie {
     // No build analytics leave the machine (privacy stance).
     analytics { disableUpload.set(true) }
