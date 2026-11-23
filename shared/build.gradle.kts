@@ -27,11 +27,15 @@ kotlin {
             // api: apps hand imports to the core as an okio Source.
             api(libs.okio)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.core)
         }
+        androidMain.dependencies { implementation(libs.ktor.client.okhttp) }
+        iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.okio.fakefilesystem)
+            implementation(libs.ktor.client.mock)
         }
     }
 }
