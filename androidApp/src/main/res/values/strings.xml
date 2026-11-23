@@ -70,7 +70,7 @@
     <string name="eff_invalid">%1$s from eff.org is not a valid Word List. %2$s Nothing was changed.</string>
     <string name="eff_storage_failed">There is not enough storage space for the update. Nothing was changed.</string>
     <string name="about_diceware_title">What is Diceware?</string>
-    <string name="about_diceware_body">Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list) gives a number such as 43561, which picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device\'s secure random generator.</string>
+    <string name="about_diceware_body">Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list), such as 4 3 5 6 1, picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device\'s secure random generator.</string>
     <string name="about_word_lists_title">Word lists</string>
     <string name="about_word_lists_body">The built-in word lists are the EFF Word Lists by the Electronic Frontier Foundation (eff.org/dice), used under the Creative Commons Attribution 3.0 License (CC BY 3.0, creativecommons.org/licenses/by/3.0).</string>
     <string name="about_privacy_title">Privacy</string>

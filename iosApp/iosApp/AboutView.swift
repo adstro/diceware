@@ -5,7 +5,7 @@ struct AboutView: View {
     static let sections: [(title: LocalizedStringResource, body: LocalizedStringResource)] = [
         (
             "What is Diceware?",
-            "Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list) gives a number such as 43561, which picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device's secure random generator."
+            "Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list), such as 4 3 5 6 1, picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device's secure random generator."
         ),
         (
             "Word lists",
