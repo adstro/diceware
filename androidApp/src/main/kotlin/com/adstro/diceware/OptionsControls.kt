@@ -39,6 +39,7 @@ private val separatorLabels = mapOf(
 @Composable
 fun OptionsControls(
     options: PassphraseOptions,
+    onWordList: (EffWordList) -> Unit,
     onWordCount: (Int) -> Unit,
     onSeparator: (Separator) -> Unit,
     onCapitalise: (Boolean) -> Unit,
@@ -47,6 +48,17 @@ fun OptionsControls(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.word_list), style = MaterialTheme.typography.titleMedium)
+        FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            wordListNames.forEach { (wordList, label) ->
+                FilterChip(
+                    selected = options.wordList == wordList,
+                    onClick = { onWordList(wordList) },
+                    label = { Text(stringResource(label)) },
+                )
+            }
+        }
+
         val wordCountLabel = stringResource(R.string.word_count, options.wordCount)
         Text(wordCountLabel, style = MaterialTheme.typography.titleMedium)
         val range = PassphraseOptions.WORD_COUNTS
