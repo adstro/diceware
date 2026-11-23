@@ -22,9 +22,12 @@ kotlin {
         commonMain.dependencies {
             // api: screen state is exposed to the apps as StateFlow.
             api(libs.kotlinx.coroutines.core)
+            implementation(libs.androidx.datastore.preferences.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.okio.fakefilesystem)
         }
     }
 }
