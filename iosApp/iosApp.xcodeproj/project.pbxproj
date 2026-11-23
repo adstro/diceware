@@ -8,9 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		1A397C7C348B18797D9242AF /* eff_large_wordlist.txt in Resources */ = {isa = PBXBuildFile; fileRef = A4F95918719AE0E046394A1B /* eff_large_wordlist.txt */; };
+		33B8091A7C54214DF5E822B4 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3462B42767C2967F05A7FC /* AboutView.swift */; };
 		4361743AA269158A01337511 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */; };
 		53E6440D8D6DD999CEC17EDF /* GeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */; };
 		5DCE94070F4904E264EBA53A /* GeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */; };
+		BBDA3BB9230006901EB66731 /* AboutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF97482D4C29A1E4DB1152D /* AboutTests.swift */; };
 		CF1CBE806989A983B38F20EF /* DicewareApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -30,14 +32,17 @@
 		6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorView.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DicewareApp.swift; sourceTree = "<group>"; };
+		9CF97482D4C29A1E4DB1152D /* AboutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTests.swift; sourceTree = "<group>"; };
 		A4F95918719AE0E046394A1B /* eff_large_wordlist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = eff_large_wordlist.txt; sourceTree = "<group>"; };
 		CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorTests.swift; sourceTree = "<group>"; };
+		CF3462B42767C2967F05A7FC /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		1DB4B685CAEE8BEFEBBAEF94 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				CF3462B42767C2967F05A7FC /* AboutView.swift */,
 				8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */,
 				6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */,
 				6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */,
@@ -58,6 +63,7 @@
 		407F741E7FEBA273A8579B0E /* iosAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				9CF97482D4C29A1E4DB1152D /* AboutTests.swift */,
 				CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */,
 			);
 			path = iosAppTests;
@@ -191,6 +197,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				33B8091A7C54214DF5E822B4 /* AboutView.swift in Sources */,
 				CF1CBE806989A983B38F20EF /* DicewareApp.swift in Sources */,
 				53E6440D8D6DD999CEC17EDF /* GeneratorView.swift in Sources */,
 			);
@@ -200,6 +207,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BBDA3BB9230006901EB66731 /* AboutTests.swift in Sources */,
 				5DCE94070F4904E264EBA53A /* GeneratorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
