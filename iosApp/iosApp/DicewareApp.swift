@@ -31,6 +31,11 @@ struct DicewareApp: App {
         try? await library.importFile(path: url.path, fileName: url.lastPathComponent)
     }
 
+    /// Only ever called from the user's tap on "Check for updates"; the core reports the outcome as state.
+    static func checkForEffUpdates(in library: WordListLibrary) async {
+        try? await library.checkForEffUpdates()
+    }
+
     /// The core Generator over the bundled EFF Word Lists and the Custom Word Lists in `wordListsPath`,
     /// rolled by SecRandomCopyBytes, with settings saved at `settingsPath`.
     static func makeGenerator(settingsPath: String = settingsPath, wordListsPath: String = wordListsPath) -> Generator {

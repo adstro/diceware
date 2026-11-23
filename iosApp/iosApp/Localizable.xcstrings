@@ -4,6 +4,18 @@
     "%@ Words · %.1f bits per Word" : {
 
     },
+    "%@ from eff.org is not a valid Word List. %@ Nothing was changed." : {
+
+    },
+    "%@ · Updated from eff.org" : {
+
+    },
+    "%@: %@ Words added, %@ removed" : {
+
+    },
+    "%@: the same Words, matched to different Rolls" : {
+
+    },
     "About" : {
 
     },
@@ -13,13 +25,25 @@
     "Add a symbol" : {
 
     },
+    "Added: %@" : {
+
+    },
     "Cancel" : {
 
     },
     "Capitalise each Word" : {
 
     },
+    "Check for updates" : {
+
+    },
+    "Checking eff.org…" : {
+
+    },
     "Copy" : {
+
+    },
+    "Couldn’t reach eff.org. Check your connection and try again. Nothing was changed." : {
 
     },
     "Delete" : {
@@ -142,10 +166,16 @@
     "Remove last die" : {
 
     },
+    "Removed: %@" : {
+
+    },
     "Rename" : {
 
     },
     "Rename Word List" : {
+
+    },
+    "Restore bundled lists" : {
 
     },
     "Roll new passphrase" : {
@@ -172,10 +202,28 @@
     "That Roll doesn't pick a digit. Roll the 2 dice again." : {
 
     },
+    "The EFF Word Lists are up to date." : {
+
+    },
+    "The EFF Word Lists were updated." : {
+
+    },
     "The built-in word lists are the EFF Word Lists by the Electronic Frontier Foundation (eff.org/dice), used under the Creative Commons Attribution 3.0 License (CC BY 3.0, creativecommons.org/licenses/by/3.0)." : {
 
     },
+    "The download from eff.org was over 1 MB, so it was refused. Nothing was changed." : {
+
+    },
+    "There is not enough storage space for the update. Nothing was changed." : {
+
+    },
     "Underscore" : {
+
+    },
+    "Update" : {
+
+    },
+    "Update EFF Word Lists?" : {
 
     },
     "Weak: below 64 bits. Add Words for a stronger passphrase." : {
@@ -197,6 +245,12 @@
 
     },
     "Words: %d" : {
+
+    },
+    "eff.org answered with error %d. Nothing was changed." : {
+
+    },
+    "eff.org redirected the download to another site, so it was refused. Nothing was changed." : {
 
     }
   },

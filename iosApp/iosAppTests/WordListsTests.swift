@@ -68,6 +68,32 @@ struct WordListsTests {
         #expect(WordListsView.message(for: failed.error) == "Not imported: the Word on line 8 contains a space.")
     }
 
+    @Test func anEffUpdateIsSummarisedAsWordsAddedAndRemovedWithASample() {
+        let change = EffWordListChange(
+            wordList: .short1, wordsAdded: 7, wordsRemoved: 2,
+            sampleAdded: ["kiwi", "lime", "fig", "date", "plum"], sampleRemoved: ["acid", "zoom"]
+        )
+
+        #expect(WordListsView.summary(of: change) == [
+            "EFF Short #1: 7 Words added, 2 removed",
+            "Added: kiwi, lime, fig, date, plum, …",
+            "Removed: acid, zoom",
+        ])
+    }
+
+    @Test func anUpdatedEffWordListIsMarked() {
+        let info = WordListInfo(id: EffWordList.large.toKotlinEnum(), name: nil, wordCount: 7776, strengthPerWordBits: 12.92, updated: true)
+
+        #expect(WordListsView.details(of: info) == "7,776 Words · 12.9 bits per Word · Updated from eff.org")
+    }
+
+    @Test func aFailedEffCheckSaysWhyAndThatNothingChanged() {
+        #expect(WordListsView.message(for: EffUpdateErrorRedirected.shared)
+            == "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
+        #expect(WordListsView.message(for: EffUpdateErrorInvalid(wordList: .short2, error: ImportErrorWordHasWhitespace(line: 8)))
+            == "EFF Short #2 from eff.org is not a valid Word List. Not imported: the Word on line 8 contains a space. Nothing was changed.")
+    }
+
     @Test func customWordListsAreExcludedFromBackup() throws {
         let values = try wordListsDirectory.resourceValues(forKeys: [.isExcludedFromBackupKey])
         #expect(values.isExcludedFromBackup == true)
