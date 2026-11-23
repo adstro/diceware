@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -56,12 +57,17 @@ fun nameOf(info: WordListInfo): String = info.name ?: stringResource(wordListNam
 fun WordListsScreen(
     wordLists: List<WordListInfo>,
     importState: ImportState,
+    effUpdateState: EffUpdateState,
     onNavigateUp: () -> Unit,
     onImport: () -> Unit,
     onCancelImport: () -> Unit,
     onDismissImportResult: () -> Unit,
     onRename: (CustomWordListId, String) -> Unit,
     onDelete: (CustomWordListId) -> Unit,
+    onCheckForUpdates: () -> Unit,
+    onApplyUpdate: () -> Unit,
+    onDismissUpdate: () -> Unit,
+    onRestoreBundled: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -96,7 +102,8 @@ fun WordListsScreen(
                 ListItem(
                     headlineContent = { Text(nameOf(info)) },
                     supportingContent = {
-                        Text(stringResource(R.string.word_list_details, info.wordCount, info.strengthPerWordBits))
+                        val details = stringResource(R.string.word_list_details, info.wordCount, info.strengthPerWordBits)
+                        Text(if (info.updated) stringResource(R.string.word_list_updated, details) else details)
                     },
                     trailingContent = (info.id as? CustomWordListId)?.let { id ->
                         { CustomWordListMenu(nameOf(info), onRename = { onRename(id, it) }, onDelete = { onDelete(id) }) }
@@ -104,13 +111,89 @@ fun WordListsScreen(
                     modifier = readable,
                 )
             }
+            EffUpdateControls(
+                checking = effUpdateState == EffUpdateState.Checking,
+                anyUpdated = wordLists.any { it.updated },
+                onCheckForUpdates = onCheckForUpdates,
+                onRestoreBundled = onRestoreBundled,
+                modifier = readable,
+            )
         }
     }
+    EffUpdateResult(effUpdateState, onApplyUpdate, onDismissUpdate)
     when (importState) {
         is ImportState.Imported -> ImportResult(stringResource(R.string.import_done, importState.name), onDismissImportResult)
         is ImportState.Failed -> ImportResult(importErrorMessage(importState.error), onDismissImportResult)
         else -> {}
     }
+}
+
+@Composable
+private fun EffUpdateControls(
+    checking: Boolean,
+    anyUpdated: Boolean,
+    onCheckForUpdates: () -> Unit,
+    onRestoreBundled: () -> Unit,
+    modifier: Modifier,
+) {
+    Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (checking) {
+            Text(stringResource(R.string.eff_checking))
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onCheckForUpdates, enabled = !checking) { Text(stringResource(R.string.eff_check_for_updates)) }
+            TextButton(onClick = onRestoreBundled, enabled = anyUpdated && !checking) { Text(stringResource(R.string.eff_restore_bundled)) }
+        }
+    }
+}
+
+/** The check's outcome: what changed, for the user to confirm, or why nothing did. */
+@Composable
+private fun EffUpdateResult(state: EffUpdateState, onApply: () -> Unit, onDismiss: () -> Unit) {
+    when (state) {
+        is EffUpdateState.UpdateAvailable -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.eff_update_title)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.changes.forEach { EffChange(it) }
+                }
+            },
+            confirmButton = { TextButton(onClick = onApply) { Text(stringResource(R.string.eff_update)) } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        )
+        EffUpdateState.UpToDate -> ImportResult(stringResource(R.string.eff_up_to_date), onDismiss)
+        EffUpdateState.Updated -> ImportResult(stringResource(R.string.eff_updated), onDismiss)
+        is EffUpdateState.Failed -> ImportResult(effUpdateErrorMessage(state.error), onDismiss)
+        EffUpdateState.Idle, EffUpdateState.Checking -> {}
+    }
+}
+
+@Composable
+private fun EffChange(change: EffWordListChange) {
+    val name = stringResource(wordListNames.getValue(change.wordList))
+    Column {
+        if (change.wordsAdded == 0L && change.wordsRemoved == 0L) {
+            Text(stringResource(R.string.eff_change_reordered, name))
+            return
+        }
+        Text(stringResource(R.string.eff_change, name, change.wordsAdded, change.wordsRemoved))
+        if (change.sampleAdded.isNotEmpty()) Text(stringResource(R.string.eff_change_added, sample(change.sampleAdded, change.wordsAdded)))
+        if (change.sampleRemoved.isNotEmpty()) Text(stringResource(R.string.eff_change_removed, sample(change.sampleRemoved, change.wordsRemoved)))
+    }
+}
+
+private fun sample(words: List<String>, total: Long) = (if (total > words.size) words + "…" else words).joinToString(", ")
+
+@Composable
+private fun effUpdateErrorMessage(error: EffUpdateError): String = when (error) {
+    EffUpdateError.Offline -> stringResource(R.string.eff_offline)
+    is EffUpdateError.HttpStatus -> stringResource(R.string.eff_http_status, error.code)
+    EffUpdateError.TooLarge -> stringResource(R.string.eff_too_large)
+    EffUpdateError.Redirected -> stringResource(R.string.eff_redirected)
+    is EffUpdateError.Invalid -> stringResource(R.string.eff_invalid, stringResource(wordListNames.getValue(error.wordList)), importErrorMessage(error.error))
+    EffUpdateError.StorageFailed -> stringResource(R.string.eff_storage_failed)
 }
 
 @Composable
@@ -199,7 +282,9 @@ private fun WordListsScreenPreview() {
                 WordListInfo(CustomWordListId("0"), "Animals", 279_936, 18.09),
             ),
             ImportState.Importing(0.4),
+            EffUpdateState.Idle,
             onNavigateUp = {}, onImport = {}, onCancelImport = {}, onDismissImportResult = {}, onRename = { _, _ -> }, onDelete = {},
+            onCheckForUpdates = {}, onApplyUpdate = {}, onDismissUpdate = {}, onRestoreBundled = {},
         )
     }
 }
