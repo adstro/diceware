@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0177E8EC04BD74B12D7D9DCB /* PrivacyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0FEDCBF944A708DE70AEDE /* PrivacyTests.swift */; };
 		1A397C7C348B18797D9242AF /* eff_large_wordlist.txt in Resources */ = {isa = PBXBuildFile; fileRef = A4F95918719AE0E046394A1B /* eff_large_wordlist.txt */; };
 		33B8091A7C54214DF5E822B4 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3462B42767C2967F05A7FC /* AboutView.swift */; };
 		4361743AA269158A01337511 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */; };
 		53E6440D8D6DD999CEC17EDF /* GeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */; };
 		5DCE94070F4904E264EBA53A /* GeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */; };
+		9939AEA3271FAABBF0A15250 /* Privacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BFDC36845AC6ACC365AD7BC /* Privacy.swift */; };
 		BBDA3BB9230006901EB66731 /* AboutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF97482D4C29A1E4DB1152D /* AboutTests.swift */; };
 		CF1CBE806989A983B38F20EF /* DicewareApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */; };
 /* End PBXBuildFile section */
@@ -27,7 +29,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4BFDC36845AC6ACC365AD7BC /* Privacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Privacy.swift; sourceTree = "<group>"; };
 		56583BC252B5F01ED9DEA19D /* iosAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A0FEDCBF944A708DE70AEDE /* PrivacyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyTests.swift; sourceTree = "<group>"; };
 		6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorView.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -46,6 +50,7 @@
 				8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */,
 				6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */,
 				6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */,
+				4BFDC36845AC6ACC365AD7BC /* Privacy.swift */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -65,6 +70,7 @@
 			children = (
 				9CF97482D4C29A1E4DB1152D /* AboutTests.swift */,
 				CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */,
+				5A0FEDCBF944A708DE70AEDE /* PrivacyTests.swift */,
 			);
 			path = iosAppTests;
 			sourceTree = "<group>";
@@ -200,6 +206,7 @@
 				33B8091A7C54214DF5E822B4 /* AboutView.swift in Sources */,
 				CF1CBE806989A983B38F20EF /* DicewareApp.swift in Sources */,
 				53E6440D8D6DD999CEC17EDF /* GeneratorView.swift in Sources */,
+				9939AEA3271FAABBF0A15250 /* Privacy.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +216,7 @@
 			files = (
 				BBDA3BB9230006901EB66731 /* AboutTests.swift in Sources */,
 				5DCE94070F4904E264EBA53A /* GeneratorTests.swift in Sources */,
+				0177E8EC04BD74B12D7D9DCB /* PrivacyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

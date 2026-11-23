@@ -58,6 +58,10 @@ struct GeneratorView: View {
                 }
                 Button("Roll new passphrase") { generator.regenerate() }
                     .buttonStyle(.borderedProminent)
+                if case .ready(let ready) = onEnum(of: state) {
+                    Button("Copy") { PassphraseClipboard.copy(ready.passphrase) }
+                        .buttonStyle(.bordered)
+                }
                 if let options, !(state is GeneratorStateLoading) {
                     OptionsControls(generator: generator, options: options)
                 }
