@@ -14,8 +14,8 @@ interface WordList {
 
     companion object {
         /**
-         * Parses Diceware format: one `Roll<whitespace>Word` per line.
-         * shortcut: holds the list in memory and does minimal validation; the streamed parser/validator replaces this.
+         * Parses the bundled EFF Word Lists (Diceware format: one `Roll<whitespace>Word` per line). They are small,
+         * trusted app resources, so held in memory; imported lists go through the streamed validator instead.
          */
         fun parse(text: String): WordList {
             val wordsByRoll = text.lineSequence().filter { it.isNotBlank() }.associate { line ->
@@ -40,18 +40,21 @@ private class InMemoryWordList(override val dicePerRoll: Int, private val wordsB
     }
 }
 
+/** Identifies a Word List: one of the bundled [EffWordList]s or a [CustomWordListId]. */
+sealed interface WordListId
+
 /** The EFF Word Lists bundled with the app, in the order they are shown; [LARGE] is the default. */
-enum class EffWordList(val fileName: String) {
+enum class EffWordList(val fileName: String) : WordListId {
     LARGE("eff_large_wordlist.txt"),
     SHORT_1("eff_short_wordlist_1.txt"),
     SHORT_2("eff_short_wordlist_2_0.txt"),
 }
 
-/** One row of the Word Lists screen. */
-data class WordListInfo(val wordList: EffWordList, val wordCount: Long, val strengthPerWordBits: Double)
+/** A Custom Word List, identified by the SHA-256 of its Words in Roll order. */
+data class CustomWordListId(val sha256: String) : WordListId
 
-internal fun WordList.info(id: EffWordList): WordListInfo {
-    var wordCount = 1L
-    repeat(dicePerRoll) { wordCount *= 6 }
-    return WordListInfo(id, wordCount, dicePerRoll * log2(6.0))
-}
+/** One row of the Word Lists screen; [name] is null for EFF Word Lists, which the apps name themselves. */
+data class WordListInfo(val id: WordListId, val name: String?, val wordCount: Long, val strengthPerWordBits: Double)
+
+internal fun wordListInfo(id: WordListId, name: String?, dicePerRoll: Int) =
+    WordListInfo(id, name, pow6(dicePerRoll), dicePerRoll * log2(6.0))

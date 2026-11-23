@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import okio.FileSystem
 import okio.Path.Companion.toPath
 import kotlin.math.log2
 
@@ -40,7 +41,8 @@ private const val SYMBOLS = "!@#$%&*-_+=?"
  * a fresh one on [regenerate] and on every change of a setting, which is also saved.
  */
 class Generator(
-    private val bundled: Map<EffWordList, WordList>,
+    /** Every Word List, and the Word Lists screen's state and actions. */
+    val library: WordListLibrary,
     random: RandomBytes,
     private val settings: DataStore<Preferences>,
     private val scope: CoroutineScope,
@@ -57,14 +59,16 @@ class Generator(
     private val mutableOptions = MutableStateFlow(PassphraseOptions())
     val options: StateFlow<PassphraseOptions> = mutableOptions.asStateFlow()
 
-    /** Word Lists screen state: every Word List, in the order shown. */
-    val wordLists: StateFlow<List<WordListInfo>> =
-        MutableStateFlow(EffWordList.entries.map { bundled.getValue(it).info(it) }).asStateFlow()
-
     init {
         scope.launch {
-            mutableOptions.value = settings.data.first().toOptions()
+            library.awaitLoaded()
+            val saved = settings.data.first().toOptions()
+            mutableOptions.value = if (library.wordList(saved.wordList) == null) saved.copy(wordList = EffWordList.LARGE) else saved
             regenerate()
+            // A deleted Selected Word List falls back to EFF Large.
+            library.wordLists.collect { lists ->
+                if (lists.none { it.id == options.value.wordList }) setWordList(EffWordList.LARGE)
+            }
         }
     }
 
@@ -101,7 +105,7 @@ class Generator(
     fun setCapitalise(on: Boolean) = update { it.copy(capitalise = on) }
     fun setAppendDigit(on: Boolean) = update { it.copy(appendDigit = on) }
     fun setAppendSymbol(on: Boolean) = update { it.copy(appendSymbol = on) }
-    fun setWordList(wordList: EffWordList) = update { it.copy(wordList = wordList) }
+    fun setWordList(wordList: WordListId) = update { it.copy(wordList = wordList) }
     fun setMode(mode: Mode) = update { it.copy(mode = mode) }
 
     private fun update(change: (PassphraseOptions) -> PassphraseOptions) {
@@ -112,17 +116,21 @@ class Generator(
     }
 
     private fun roll(options: PassphraseOptions): GeneratorState = try {
-        val draft = Draft(options, bundled.getValue(options.wordList))
+        val draft = Draft(options, selectedWordList(options))
         draft.build(dice::roll)
         GeneratorState.Ready(draft.passphrase, draft.strengthBits)
     } catch (e: RandomnessUnavailableException) {
         GeneratorState.RandomnessUnavailable
     }
 
+    // A list deleted a moment ago is replaced by EFF Large as soon as the deletion is seen.
+    private fun selectedWordList(options: PassphraseOptions): WordList =
+        library.wordList(options.wordList) ?: library.wordList(EffWordList.LARGE)!!
+
     /** Builds from the dice entered so far; whatever they don't cover yet is what entry asks for next. */
     private fun showEntered() {
         val options = options.value
-        val draft = Draft(options, bundled.getValue(options.wordList))
+        val draft = Draft(options, selectedWordList(options))
         var used = 0
         try {
             draft.build { enteredDice.getOrNull(used++) ?: throw NeedMoreDice }
@@ -210,18 +218,30 @@ data class DiceEntryState(
 // shortcut: not thread-safe, fine while Generators are only created on the main thread.
 private val settingsByPath = mutableMapOf<String, DataStore<Preferences>>()
 
+// Like settings, one library per directory per process, so two never write the same index.
+// shortcut: not thread-safe, fine while Generators are only created on the main thread.
+private val librariesByPath = mutableMapOf<String, WordListLibrary>()
+
 /**
- * The production Generator: the bundled EFF Word Lists, whose Diceware-format text [readBundled] returns,
- * rolled by the OS secure random generator, with settings saved in the DataStore Preferences file at
- * [settingsPath] (ending `.preferences_pb`).
+ * The production Generator: the bundled EFF Word Lists, whose Diceware-format text [readBundled] returns
+ * (called off the main thread), plus Custom Word Lists in [wordListsPath], rolled by the OS secure random
+ * generator, with settings saved in the DataStore Preferences file at [settingsPath] (ending `.preferences_pb`).
  */
-fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String, scope: CoroutineScope): Generator = Generator(
-    EffWordList.entries.associateWith { WordList.parse(readBundled(it)) },
+fun createGenerator(
+    readBundled: (EffWordList) -> String,
+    settingsPath: String,
+    wordListsPath: String,
+    scope: CoroutineScope,
+): Generator = Generator(
+    librariesByPath.getOrPut(wordListsPath) {
+        // The library outlives any one screen's scope: it is shared by every Generator in the process.
+        WordListLibrary({ EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } }, FileSystem.SYSTEM, wordListsPath.toPath(), MainScope())
+    },
     secureRandomBytes(),
     settingsByPath.getOrPut(settingsPath) { PreferenceDataStoreFactory.createWithPath { settingsPath.toPath() } },
     scope,
 )
 
 /** For Swift, which can't make a [CoroutineScope]: the Generator lives on the main thread for the app's lifetime. */
-fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String): Generator =
-    createGenerator(readBundled, settingsPath, MainScope())
+fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String, wordListsPath: String): Generator =
+    createGenerator(readBundled, settingsPath, wordListsPath, MainScope())

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
@@ -291,9 +292,9 @@ class GeneratorTest {
 
     @Test
     fun wordListsShowEachEffWordListWithItsWordCountAndStrengthPerWord() = runTest {
-        val wordLists = generator(ScriptedRandom(), wordLists = effShaped).wordLists.value
+        val wordLists = generator(ScriptedRandom(), wordLists = effShaped).library.wordLists.first { it.isNotEmpty() }
 
-        assertEquals(listOf(EffWordList.LARGE, EffWordList.SHORT_1, EffWordList.SHORT_2), wordLists.map { it.wordList })
+        assertEquals(listOf(EffWordList.LARGE, EffWordList.SHORT_1, EffWordList.SHORT_2), wordLists.map { it.id })
         assertEquals(listOf(7776L, 1296L, 1296L), wordLists.map { it.wordCount })
         // log₂6⁵ ≈ 12.92 and log₂6⁴ ≈ 10.34 bits per Word.
         assertEquals(12.92, wordLists[0].strengthPerWordBits, 0.01)
@@ -558,7 +559,12 @@ class GeneratorTest {
         fileSystem: FakeFileSystem = FakeFileSystem(),
         scope: CoroutineScope = backgroundScope,
         wordLists: Map<EffWordList, WordList> = EffWordList.entries.associateWith { rollNamedList },
-    ) = Generator(wordLists, random, settingsIn(fileSystem, scope), scope)
+    ) = Generator(
+        WordListLibrary({ wordLists }, fileSystem, "/lists".toPath(), scope, StandardTestDispatcher(testScheduler)),
+        random,
+        settingsIn(fileSystem, scope),
+        scope,
+    )
 
     /** DataStore Preferences over an in-memory file system, so "sessions" can share it. */
     private fun settingsIn(fileSystem: FakeFileSystem, scope: CoroutineScope): DataStore<Preferences> =

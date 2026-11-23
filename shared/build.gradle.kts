@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.skie)
 }
 
@@ -23,6 +24,9 @@ kotlin {
             // api: screen state is exposed to the apps as StateFlow.
             api(libs.kotlinx.coroutines.core)
             implementation(libs.androidx.datastore.preferences.core)
+            // api: apps hand imports to the core as an okio Source.
+            api(libs.okio)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
