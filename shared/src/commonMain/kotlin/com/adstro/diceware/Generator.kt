@@ -22,6 +22,9 @@ sealed interface GeneratorState {
         val isWeak: Boolean get() = strengthBits < WEAK_BELOW_BITS
     }
 
+    /** Dice Mode: no Passphrase until the user has entered every Roll. */
+    data object AwaitingDice : GeneratorState
+
     /** Secure randomness failed, so no Passphrase is shown (never a weaker fallback). */
     data object RandomnessUnavailable : GeneratorState
 }
@@ -46,6 +49,11 @@ class Generator(
     private val mutableState = MutableStateFlow<GeneratorState>(GeneratorState.Loading)
     val state: StateFlow<GeneratorState> = mutableState.asStateFlow()
 
+    // Rolls live only here, in memory: never saved or logged.
+    private val enteredDice = mutableListOf<Int>()
+    private val mutableDiceEntry = MutableStateFlow(DiceEntryState())
+    val diceEntry: StateFlow<DiceEntryState> = mutableDiceEntry.asStateFlow()
+
     private val mutableOptions = MutableStateFlow(PassphraseOptions())
     val options: StateFlow<PassphraseOptions> = mutableOptions.asStateFlow()
 
@@ -60,8 +68,32 @@ class Generator(
         }
     }
 
+    /** Random mode: a fresh Passphrase. Dice Mode: start the dice entry over. */
     fun regenerate() {
-        mutableState.value = roll(options.value)
+        val options = options.value
+        enteredDice.clear()
+        if (options.mode == Mode.DICE) {
+            showEntered()
+        } else {
+            mutableState.value = roll(options)
+        }
+    }
+
+    /** Dice Mode: opening dice entry continues an unfinished entry, or starts over once the Passphrase is complete. */
+    fun startDiceEntry() {
+        if (diceEntry.value.step == DiceStep.DONE) regenerate()
+    }
+
+    /** Dice Mode: adds one die face (1–6) to the current Roll; ignored once every Roll is entered. */
+    fun enterDie(face: Int) {
+        if (face !in 1..6 || diceEntry.value.step == DiceStep.DONE) return
+        enteredDice += face
+        showEntered()
+    }
+
+    /** Dice Mode: takes back the last die entered, reopening the previous Roll if the current one is empty. */
+    fun removeLastDie() {
+        if (enteredDice.removeLastOrNull() != null) showEntered()
     }
 
     fun setWordCount(count: Int) = update { it.copy(wordCount = count.coerceIn(PassphraseOptions.WORD_COUNTS)) }
@@ -70,6 +102,7 @@ class Generator(
     fun setAppendDigit(on: Boolean) = update { it.copy(appendDigit = on) }
     fun setAppendSymbol(on: Boolean) = update { it.copy(appendSymbol = on) }
     fun setWordList(wordList: EffWordList) = update { it.copy(wordList = wordList) }
+    fun setMode(mode: Mode) = update { it.copy(mode = mode) }
 
     private fun update(change: (PassphraseOptions) -> PassphraseOptions) {
         val options = change(options.value)
@@ -79,38 +112,99 @@ class Generator(
     }
 
     private fun roll(options: PassphraseOptions): GeneratorState = try {
-        val wordList = bundled.getValue(options.wordList)
-        val words = List(options.wordCount) {
-            val word = wordList.resolve(List(wordList.dicePerRoll) { dice.roll() })
-            if (options.capitalise) word.replaceFirstChar { it.uppercase() } else word
-        }
-        var passphrase = words.joinToString(options.separator.text)
-        // Capitalisation is guessable, so it adds no Strength.
-        var bits = options.wordCount * wordList.dicePerRoll * log2(6.0)
-        if (options.appendDigit) {
-            passphrase += rollDigit()
-            bits += log2(10.0)
-        }
-        if (options.appendSymbol) {
-            passphrase += SYMBOLS[twoDiceOutcome() / 3]
-            bits += log2(12.0)
-        }
-        GeneratorState.Ready(passphrase, bits)
+        val draft = Draft(options, bundled.getValue(options.wordList))
+        draft.build(dice::roll)
+        GeneratorState.Ready(draft.passphrase, draft.strengthBits)
     } catch (e: RandomnessUnavailableException) {
         GeneratorState.RandomnessUnavailable
     }
 
-    /** Outcomes 0–29 give each digit three chances; the other 6 are rolled again so no digit is favoured. */
-    private fun rollDigit(): Int {
-        while (true) {
-            val outcome = twoDiceOutcome()
-            if (outcome < 30) return outcome / 3
+    /** Builds from the dice entered so far; whatever they don't cover yet is what entry asks for next. */
+    private fun showEntered() {
+        val options = options.value
+        val draft = Draft(options, bundled.getValue(options.wordList))
+        var used = 0
+        try {
+            draft.build { enteredDice.getOrNull(used++) ?: throw NeedMoreDice }
+            mutableState.value = GeneratorState.Ready(draft.passphrase, draft.strengthBits)
+        } catch (e: NeedMoreDice) {
+            mutableState.value = GeneratorState.AwaitingDice
         }
+        mutableDiceEntry.value = draft.entry(roll = enteredDice.drop(draft.diceInCompleteRolls))
+    }
+}
+
+private object NeedMoreDice : Exception()
+
+/**
+ * A Passphrase built Roll by Roll from a source of dice: the one Roll resolution for both modes (ADR 0002).
+ * In Dice Mode the source runs out mid-way, and the draft then holds the Words built so far.
+ */
+private class Draft(private val options: PassphraseOptions, private val wordList: WordList) {
+    val words = mutableListOf<String>()
+    var digit: Int? = null
+    var symbol: Char? = null
+    var rerollDigit = false
+    var diceInCompleteRolls = 0
+
+    fun build(nextDie: () -> Int) {
+        while (words.size < options.wordCount) {
+            val word = wordList.resolve(List(wordList.dicePerRoll) { nextDie() })
+            words += if (options.capitalise) word.replaceFirstChar { it.uppercase() } else word
+            diceInCompleteRolls += wordList.dicePerRoll
+        }
+        // Outcomes 0–29 give each digit three chances; the other 6 are rolled again so no digit is favoured.
+        while (options.appendDigit && digit == null) {
+            val outcome = twoDiceOutcome(nextDie)
+            if (outcome < 30) digit = outcome / 3 else rerollDigit = true
+        }
+        if (options.appendSymbol) symbol = SYMBOLS[twoDiceOutcome(nextDie) / 3]
+    }
+
+    val passphrase: String
+        get() = words.joinToString(options.separator.text) + (digit?.toString() ?: "") + (symbol?.toString() ?: "")
+
+    // Capitalisation is guessable, so it adds no Strength.
+    val strengthBits: Double
+        get() = options.wordCount * wordList.dicePerRoll * log2(6.0) +
+            (if (options.appendDigit) log2(10.0) else 0.0) +
+            (if (options.appendSymbol) log2(12.0) else 0.0)
+
+    fun entry(roll: List<Int>): DiceEntryState {
+        val step = when {
+            words.size < options.wordCount -> DiceStep.WORD
+            options.appendDigit && digit == null -> DiceStep.DIGIT
+            options.appendSymbol && symbol == null -> DiceStep.SYMBOL
+            else -> DiceStep.DONE
+        }
+        val diceInRoll = when (step) {
+            DiceStep.WORD -> wordList.dicePerRoll
+            DiceStep.DIGIT, DiceStep.SYMBOL -> 2
+            DiceStep.DONE -> 0
+        }
+        return DiceEntryState(words.toList(), options.wordCount, step, diceInRoll, roll, step == DiceStep.DIGIT && rerollDigit)
     }
 
     /** A Roll of two dice as one of 36 equally likely outcomes, 0–35. */
-    private fun twoDiceOutcome(): Int = (dice.roll() - 1) * 6 + (dice.roll() - 1)
+    private fun twoDiceOutcome(nextDie: () -> Int): Int =
+        ((nextDie() - 1) * 6 + (nextDie() - 1)).also { diceInCompleteRolls += 2 }
 }
+
+/** What the next Roll of Dice entry is for. */
+enum class DiceStep { WORD, DIGIT, SYMBOL, DONE }
+
+/**
+ * Dice entry screen state: the Words whose Rolls are complete, and the dice entered so far for the current
+ * Roll, which needs [diceInRoll] dice. [rerollDigit] asks for a new two-dice Roll after an unmapped digit outcome.
+ */
+data class DiceEntryState(
+    val words: List<String> = emptyList(),
+    val wordCount: Int = 0,
+    val step: DiceStep = DiceStep.WORD,
+    val diceInRoll: Int = 0,
+    val roll: List<Int> = emptyList(),
+    val rerollDigit: Boolean = false,
+)
 
 // DataStore allows one instance per file per process, but apps and tests may create several Generators.
 // shortcut: not thread-safe, fine while Generators are only created on the main thread.

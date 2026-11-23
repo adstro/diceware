@@ -14,6 +14,9 @@ enum class Separator(val text: String) {
     NONE(""),
 }
 
+/** Where the dice come from: the secure random generator, or physical dice the user enters (Dice Mode). */
+enum class Mode { RANDOM, DICE }
+
 /** How the user shapes a Passphrase; the defaults are the most memorable strong Passphrase. */
 data class PassphraseOptions(
     val wordCount: Int = 6,
@@ -22,6 +25,7 @@ data class PassphraseOptions(
     val appendDigit: Boolean = false,
     val appendSymbol: Boolean = false,
     val wordList: EffWordList = EffWordList.LARGE,
+    val mode: Mode = Mode.RANDOM,
 ) {
     companion object {
         val WORD_COUNTS = 1..20
@@ -34,6 +38,7 @@ private val capitaliseKey = booleanPreferencesKey("capitalise")
 private val appendDigitKey = booleanPreferencesKey("append_digit")
 private val appendSymbolKey = booleanPreferencesKey("append_symbol")
 private val wordListKey = stringPreferencesKey("word_list")
+private val modeKey = stringPreferencesKey("mode")
 
 /** Saved settings are untrusted on read: anything unknown or out of range falls back to the default. */
 internal fun Preferences.toOptions(): PassphraseOptions {
@@ -45,6 +50,7 @@ internal fun Preferences.toOptions(): PassphraseOptions {
         appendDigit = this[appendDigitKey] ?: defaults.appendDigit,
         appendSymbol = this[appendSymbolKey] ?: defaults.appendSymbol,
         wordList = EffWordList.entries.firstOrNull { it.name == this[wordListKey] } ?: defaults.wordList,
+        mode = Mode.entries.firstOrNull { it.name == this[modeKey] } ?: defaults.mode,
     )
 }
 
@@ -55,4 +61,5 @@ internal fun PassphraseOptions.writeTo(preferences: androidx.datastore.preferenc
     preferences[appendDigitKey] = appendDigit
     preferences[appendSymbolKey] = appendSymbol
     preferences[wordListKey] = wordList.name
+    preferences[modeKey] = mode.name
 }

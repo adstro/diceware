@@ -301,6 +301,232 @@ class GeneratorTest {
         assertEquals(10.34, wordLists[2].strengthPerWordBits, 0.01)
     }
 
+    @Test
+    fun randomIsTheDefaultModeAndDiceModeShowsNoPassphraseUntilDiceAreEntered() = runTest {
+        val random = ScriptedRandom(*ones(24))
+        val generator = generator(random)
+        assertEquals(Mode.RANDOM, generator.options.value.mode)
+        generator.ready()
+
+        generator.setMode(Mode.DICE)
+
+        assertEquals(Mode.DICE, generator.options.value.mode)
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+        // Dice Mode never tops up with the app's random generator.
+        assertEquals(0, random.remaining)
+    }
+
+    @Test
+    fun diceModeIsRestoredInTheNextSession() = runTest {
+        val fileSystem = FakeFileSystem()
+        val firstSession = Job()
+        val first = generator(ScriptedRandom(*ones(24)), fileSystem, CoroutineScope(coroutineContext + firstSession))
+        first.ready()
+        first.setMode(Mode.DICE)
+        testScheduler.advanceUntilIdle()
+        firstSession.cancelAndJoin()
+
+        val second = generator(ScriptedRandom(), fileSystem)
+
+        assertIs<GeneratorState.AwaitingDice>(second.settled())
+        assertEquals(Mode.DICE, second.options.value.mode)
+    }
+
+    @Test
+    fun diceEntryAsksForOneRollOfFourDicePerWordAndShowsEachWordOnceItsRollIsComplete() = runTest {
+        val generator = diceMode(wordCount = 2)
+        assertEquals(DiceEntryState(wordCount = 2, step = DiceStep.WORD, diceInRoll = 4), generator.diceEntry.value)
+
+        generator.enterDice(1, 2, 3)
+        assertEquals(listOf(1, 2, 3), generator.diceEntry.value.roll)
+        assertEquals(emptyList(), generator.diceEntry.value.words)
+
+        generator.enterDice(4)
+        assertEquals(listOf("w1234"), generator.diceEntry.value.words)
+        assertEquals(emptyList(), generator.diceEntry.value.roll)
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+
+        generator.enterDice(6, 6, 6, 6)
+
+        val entry = generator.diceEntry.value
+        assertEquals(listOf("w1234", "w6666"), entry.words)
+        assertEquals(DiceStep.DONE, entry.step)
+        assertEquals(0, entry.diceInRoll)
+        val ready = assertIs<GeneratorState.Ready>(generator.state.value)
+        assertEquals("w1234 w6666", ready.passphrase)
+        // 2 × 4 × log₂6.
+        assertEquals(20.68, ready.strengthBits, 0.01)
+    }
+
+    @Test
+    fun aMistypedDieCanBeRemovedAndReEnteredEvenAfterItsWordIsShown() = runTest {
+        val generator = diceMode(wordCount = 2)
+        generator.enterDice(1, 2, 3, 5)
+        assertEquals(listOf("w1235"), generator.diceEntry.value.words)
+
+        generator.removeLastDie()
+
+        assertEquals(emptyList(), generator.diceEntry.value.words)
+        assertEquals(listOf(1, 2, 3), generator.diceEntry.value.roll)
+        generator.enterDice(4, 2, 2, 2, 2)
+        assertEquals("w1234 w2222", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+
+        // Correcting after the last Roll takes the Passphrase away again until it is complete.
+        generator.removeLastDie()
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+        generator.enterDie(3)
+        assertEquals("w1234 w2223", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+    }
+
+    @Test
+    fun removingADieWithNoneEnteredDoesNothing() = runTest {
+        val generator = diceMode(wordCount = 1)
+
+        generator.removeLastDie()
+
+        assertEquals(DiceEntryState(wordCount = 1, step = DiceStep.WORD, diceInRoll = 4), generator.diceEntry.value)
+    }
+
+    @Test
+    fun theDigitTakesATwoDiceRollAndAnUnmappedOutcomePromptsARollAgain() = runTest {
+        val generator = diceMode(wordCount = 1)
+        generator.setAppendDigit(true)
+        generator.enterDice(1, 1, 1, 1)
+        assertEquals(DiceEntryState(listOf("w1111"), 1, DiceStep.DIGIT, diceInRoll = 2), generator.diceEntry.value)
+
+        // (6,1) is outcome 30 of 0–35: no digit, so the user rolls the two dice again.
+        generator.enterDice(6, 1)
+        assertEquals(DiceEntryState(listOf("w1111"), 1, DiceStep.DIGIT, diceInRoll = 2, rerollDigit = true), generator.diceEntry.value)
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+
+        // (4,3) is outcome 20 → digit 6.
+        generator.enterDice(4, 3)
+        assertEquals(DiceStep.DONE, generator.diceEntry.value.step)
+        assertEquals(false, generator.diceEntry.value.rerollDigit)
+        val ready = assertIs<GeneratorState.Ready>(generator.state.value)
+        assertEquals("w11116", ready.passphrase)
+        assertEquals(4 * 2.585 + 3.322, ready.strengthBits, 0.01)
+    }
+
+    @Test
+    fun theSymbolTakesATwoDiceRollThreeOutcomesPerSymbolAfterTheDigit() = runTest {
+        val generator = diceMode(wordCount = 1)
+        generator.setAppendDigit(true)
+        generator.setAppendSymbol(true)
+        generator.enterDice(2, 2, 2, 2, 2, 1)
+        assertEquals(DiceStep.SYMBOL, generator.diceEntry.value.step)
+        assertEquals(2, generator.diceEntry.value.diceInRoll)
+
+        // (6,6) is outcome 35 → the 12th symbol, '?'.
+        generator.enterDice(6, 6)
+
+        assertEquals("w22222?", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+    }
+
+    @Test
+    fun everySymbolHasExactlyThreeOfTheThirtySixTwoDiceOutcomes() = runTest {
+        val generator = diceMode(wordCount = 1)
+        generator.setAppendSymbol(true)
+        val symbols = (1..6).flatMap { a ->
+            (1..6).map { b ->
+                generator.regenerate()
+                generator.enterDice(1, 1, 1, 1, a, b)
+                assertIs<GeneratorState.Ready>(generator.state.value).passphrase.last()
+            }
+        }
+
+        assertEquals("!@#$%&*-_+=?".flatMap { listOf(it, it, it) }, symbols)
+    }
+
+    @Test
+    fun diceBeyondTheLastRollAreIgnoredAndFacesOutside1To6AreRejected() = runTest {
+        val generator = diceMode(wordCount = 1)
+        generator.enterDice(0, 7, 1, 2, 3, 4)
+
+        generator.enterDie(5)
+
+        assertEquals("w1234", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+        assertEquals(emptyList(), generator.diceEntry.value.roll)
+    }
+
+    @Test
+    fun changingAnySettingResetsTheDiceEntry() = runTest {
+        val generator = diceMode(wordCount = 2)
+        val changes = listOf<Generator.() -> Unit>(
+            { setWordCount(3) },
+            { setSeparator(Separator.HYPHEN) },
+            { setCapitalise(true) },
+            { setAppendDigit(true) },
+            { setAppendSymbol(true) },
+            { setWordList(EffWordList.SHORT_1) },
+        )
+
+        for (change in changes) {
+            generator.enterDice(1, 2, 3, 4, 5)
+            generator.change()
+            assertEquals(emptyList(), generator.diceEntry.value.words)
+            assertEquals(emptyList(), generator.diceEntry.value.roll)
+            assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+        }
+    }
+
+    @Test
+    fun startingDiceEntryKeepsAnUnfinishedEntryButStartsOverAFinishedOne() = runTest {
+        val generator = diceMode(wordCount = 1)
+        generator.enterDice(1, 2)
+
+        generator.startDiceEntry()
+        assertEquals(listOf(1, 2), generator.diceEntry.value.roll)
+
+        generator.enterDice(3, 4)
+        generator.startDiceEntry()
+        assertEquals(DiceEntryState(wordCount = 1, step = DiceStep.WORD, diceInRoll = 4), generator.diceEntry.value)
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+    }
+
+    @Test
+    fun eachRollTakesAsManyDiceAsTheSelectedWordListNeedsFourFiveOrSix() = runTest {
+        val generator = diceMode(
+            wordCount = 1,
+            wordLists = mapOf(
+                EffWordList.LARGE to rollNamed(5, "large"),
+                EffWordList.SHORT_1 to rollNamed(4, "short1_"),
+                // Stands in for a 6⁶ Custom Word List.
+                EffWordList.SHORT_2 to rollNamed(6, "six"),
+            ),
+        )
+        assertEquals(5, generator.diceEntry.value.diceInRoll)
+        generator.enterDice(1, 2, 3, 4, 5)
+        assertEquals("large12345", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+
+        generator.setWordList(EffWordList.SHORT_1)
+        assertEquals(4, generator.diceEntry.value.diceInRoll)
+        generator.enterDice(6, 5, 4, 3)
+        assertEquals("short1_6543", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+
+        generator.setWordList(EffWordList.SHORT_2)
+        assertEquals(6, generator.diceEntry.value.diceInRoll)
+        generator.enterDice(1, 2, 3, 4, 5)
+        assertIs<GeneratorState.AwaitingDice>(generator.state.value)
+        generator.enterDie(6)
+        val ready = assertIs<GeneratorState.Ready>(generator.state.value)
+        assertEquals("six123456", ready.passphrase)
+        // 1 × 6 × log₂6.
+        assertEquals(15.51, ready.strengthBits, 0.01)
+    }
+
+    @Test
+    fun switchingBackToRandomModeRollsWithTheSecureGeneratorAgain() = runTest {
+        val generator = generator(ScriptedRandom(*ones(24), *diceBytes(*IntArray(24) { 5 })))
+        generator.ready()
+        generator.setMode(Mode.DICE)
+        generator.enterDice(1, 2)
+
+        generator.setMode(Mode.RANDOM)
+
+        assertEquals(List(6) { "w5555" }.joinToString(" "), assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+    }
+
     /** Shaped like the EFF Word Lists (Large 6⁵, Shorts 6⁴); each Word names its list and Roll. */
     private val effShaped: Map<EffWordList, WordList> = mapOf(
         EffWordList.LARGE to rollNamed(5, "large"),
@@ -310,6 +536,20 @@ class GeneratorTest {
 
     private fun rollNamed(dice: Int, prefix: String): WordList =
         WordList.parse(allRolls(dice).joinToString("\n") { "$it\t$prefix$it" })
+
+    /** A Generator in Dice Mode with [wordCount] Words; its random source is empty, so any random Roll fails the test. */
+    private suspend fun TestScope.diceMode(
+        wordCount: Int,
+        wordLists: Map<EffWordList, WordList> = EffWordList.entries.associateWith { rollNamedList },
+    ): Generator {
+        val generator = generator(ScriptedRandom(), wordLists = wordLists)
+        generator.settled()
+        generator.setMode(Mode.DICE)
+        generator.setWordCount(wordCount)
+        return generator
+    }
+
+    private fun Generator.enterDice(vararg faces: Int) = faces.forEach { enterDie(it) }
 
     private fun ones(dice: Int): IntArray = diceBytes(*IntArray(dice) { 1 })
 
