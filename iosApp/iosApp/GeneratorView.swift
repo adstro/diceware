@@ -5,6 +5,7 @@ import SwiftUI
 struct GeneratorView: View {
     let generator: Generator
     @State private var state: GeneratorState?
+    @State private var options: PassphraseOptions?
 
     var body: some View {
         NavigationStack {
@@ -18,27 +19,89 @@ struct GeneratorView: View {
         .task {
             for await newState in generator.state { state = newState }
         }
+        .task {
+            for await newOptions in generator.options { options = newOptions }
+        }
     }
 
     private var content: some View {
         VStack(spacing: 24) {
             if let state {
                 switch onEnum(of: state) {
+                // Saved settings arrive within milliseconds; showing controls before then would let them be overwritten.
+                case .loading:
+                    EmptyView()
                 case .ready(let ready):
                     Text(ready.passphrase)
                         // Monospaced keeps l, 1 and I distinguishable.
                         .font(.system(.title, design: .monospaced))
                         .multilineTextAlignment(.center)
+                    Text("Strength: \(ready.strengthBits, specifier: "%.1f") bits")
+                    if ready.isWeak {
+                        Text("Weak: below 64 bits. Add Words for a stronger passphrase.")
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.center)
+                    }
                 case .randomnessUnavailable:
                     Text("Secure randomness is unavailable on this device, so no passphrase was generated.")
                         .foregroundStyle(.red)
                         .multilineTextAlignment(.center)
                 }
+                Button("Roll new passphrase") { generator.regenerate() }
+                    .buttonStyle(.borderedProminent)
+                if let options, !(state is GeneratorStateLoading) {
+                    OptionsControls(generator: generator, options: options)
+                }
             }
-            Button("Roll new passphrase") { generator.regenerate() }
-                .buttonStyle(.borderedProminent)
         }
         .padding(24)
         .frame(maxWidth: 600)
+    }
+}
+
+/// Renders the core's PassphraseOptions and forwards each change to the core.
+struct OptionsControls: View {
+    let generator: Generator
+    let options: PassphraseOptions
+
+    var body: some View {
+        let range = PassphraseOptions.companion.WORD_COUNTS
+        VStack(spacing: 12) {
+            Stepper(
+                "Words: \(options.wordCount)",
+                value: Binding(get: { Int(options.wordCount) }, set: { generator.setWordCount(count: Int32($0)) }),
+                in: Int(range.first)...Int(range.last)
+            )
+            LabeledContent("Separator") {
+                Picker(
+                    "Separator",
+                    selection: Binding(get: { options.separator }, set: { generator.setSeparator(separator: $0) })
+                ) {
+                    ForEach(Separator.allCases, id: \.self) { Text(Self.label(of: $0)).tag($0) }
+                }
+            }
+            Toggle(
+                "Capitalise each Word",
+                isOn: Binding(get: { options.capitalise }, set: { generator.setCapitalise(on: $0) })
+            )
+            Toggle(
+                "Add a digit",
+                isOn: Binding(get: { options.appendDigit }, set: { generator.setAppendDigit(on: $0) })
+            )
+            Toggle(
+                "Add a symbol",
+                isOn: Binding(get: { options.appendSymbol }, set: { generator.setAppendSymbol(on: $0) })
+            )
+        }
+    }
+
+    private static func label(of separator: Separator) -> LocalizedStringKey {
+        switch separator {
+        case .space: "Space"
+        case .hyphen: "Hyphen"
+        case .period: "Period"
+        case .underscore: "Underscore"
+        case .none: "None"
+        }
     }
 }
