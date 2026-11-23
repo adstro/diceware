@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Diceware</string>
+    <string name="regenerate">Roll new passphrase</string>
+    <string name="randomness_unavailable">Secure randomness is unavailable on this device, so no passphrase was generated.</string>
+</resources>
