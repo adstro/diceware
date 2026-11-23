@@ -35,12 +35,13 @@ private val separatorLabels = mapOf(
     Separator.NONE to R.string.separator_none,
 )
 
-/** Renders the core's [PassphraseOptions] and forwards each change to the core. */
+/** Renders the core's [PassphraseOptions], with every Word List to pick from, and forwards each change to the core. */
 @Composable
 fun OptionsControls(
     options: PassphraseOptions,
+    wordLists: List<WordListInfo>,
     onMode: (Mode) -> Unit,
-    onWordList: (EffWordList) -> Unit,
+    onWordList: (WordListId) -> Unit,
     onWordCount: (Int) -> Unit,
     onSeparator: (Separator) -> Unit,
     onCapitalise: (Boolean) -> Unit,
@@ -58,11 +59,11 @@ fun OptionsControls(
 
         Text(stringResource(R.string.word_list), style = MaterialTheme.typography.titleMedium)
         FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            wordListNames.forEach { (wordList, label) ->
+            wordLists.forEach { info ->
                 FilterChip(
-                    selected = options.wordList == wordList,
-                    onClick = { onWordList(wordList) },
-                    label = { Text(stringResource(label)) },
+                    selected = options.wordList == info.id,
+                    onClick = { onWordList(info.id) },
+                    label = { Text(nameOf(info)) },
                 )
             }
         }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Custom Word Lists stay on this device: never in cloud backup or a device-to-device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="wordlists/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="wordlists/" />
+    </device-transfer>
+</data-extraction-rules>

@@ -8,7 +8,6 @@ import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import okio.FileSystem
 import okio.ForwardingFileSystem
-import okio.ForwardingSink
 import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
@@ -190,11 +189,10 @@ class WordListLibraryTest {
     @Test
     fun runningOutOfSpaceFailsCleanlyWithNothingImported() = runTest {
         val full = object : ForwardingFileSystem(fileSystem) {
-            override fun sink(file: Path, mustCreate: Boolean): Sink = object : ForwardingSink(super.sink(file, mustCreate)) {
-                override fun write(source: Buffer, byteCount: Long) {
-                    if ("by-word" in file.toString()) throw IOException("No space left on device")
-                    super.write(source, byteCount)
-                }
+            override fun sink(file: Path, mustCreate: Boolean): Sink {
+                // The disk fills up once the import has written most of its files.
+                if ("by-word" in file.toString()) throw IOException("No space left on device")
+                return super.sink(file, mustCreate)
             }
         }
         val library = library(full)
