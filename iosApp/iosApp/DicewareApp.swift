@@ -7,7 +7,7 @@ struct DicewareApp: App {
     @State private var generator = DicewareApp.makeGenerator()
 
     var body: some Scene {
-        WindowGroup { GeneratorView(generator: generator) }
+        WindowGroup { GeneratorView(generator: generator).modifier(PrivacyCover()) }
     }
 
     /// The core Generator over the bundled EFF Large Word List, rolled by SecRandomCopyBytes,
