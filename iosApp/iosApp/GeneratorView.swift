@@ -6,6 +6,7 @@ struct GeneratorView: View {
     let generator: Generator
     @State private var state: GeneratorState?
     @State private var options: PassphraseOptions?
+    @State private var showingAbout = false
 
     var body: some View {
         NavigationStack {
@@ -15,6 +16,14 @@ struct GeneratorView: View {
                 ScrollView { content }
             }
             .navigationTitle("Diceware")
+            .toolbar {
+                Menu {
+                    Button("About") { showingAbout = true }
+                } label: {
+                    Label("More options", systemImage: "ellipsis.circle")
+                }
+            }
+            .navigationDestination(isPresented: $showingAbout) { AboutView() }
         }
         .task {
             for await newState in generator.state { state = newState }
