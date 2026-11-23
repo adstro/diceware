@@ -20,12 +20,12 @@ interface WordList {
         fun parse(text: String): WordList {
             val wordsByRoll = text.lineSequence().filter { it.isNotBlank() }.associate { line ->
                 val parts = line.trim().split(Regex("\\s+"))
-                require(parts.size == 2 && parts[0].all { it in '1'..'6' }) { "Not a Diceware line: $line" }
+                require(parts.size == 2 && isRoll(parts[0])) { "Not a Diceware line: $line" }
                 parts[0] to parts[1]
             }
             val dicePerRoll = wordsByRoll.keys.firstOrNull()?.length ?: 0
-            val expected = (1..dicePerRoll).fold(1) { acc, _ -> acc * 6 }
-            require(wordsByRoll.size == expected && wordsByRoll.keys.all { it.length == dicePerRoll }) {
+            val expected = pow6(dicePerRoll)
+            require(wordsByRoll.size.toLong() == expected && wordsByRoll.keys.all { it.length == dicePerRoll }) {
                 "A Word List needs one Word for each of the $expected Rolls of $dicePerRoll dice"
             }
             return InMemoryWordList(dicePerRoll, wordsByRoll)
@@ -35,10 +35,27 @@ interface WordList {
 
 private class InMemoryWordList(override val dicePerRoll: Int, private val wordsByRoll: Map<String, String>) : WordList {
     override fun resolve(roll: List<Int>): String {
-        require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
+        requireRoll(roll, dicePerRoll)
         return wordsByRoll.getValue(roll.joinToString(""))
     }
 }
+
+/** Whether [text] is a Roll written out: one digit 1–6 per die. */
+internal fun isRoll(text: String): Boolean = text.isNotEmpty() && text.all { it in '1'..'6' }
+
+/** What every [WordList.resolve] checks first: [roll] is [dicePerRoll] dice, each 1–6. */
+internal fun requireRoll(roll: List<Int>, dicePerRoll: Int) =
+    require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
+
+/** 6ⁿ: how many Rolls there are of [n] dice, and so how many Words a Word List with them has. */
+internal fun pow6(n: Int): Long {
+    var result = 1L
+    repeat(n) { result *= 6 }
+    return result
+}
+
+/** The Strength one Roll of [dicePerRoll] dice adds: log₂ of its 6ⁿ equally likely outcomes. */
+internal fun bitsPerRoll(dicePerRoll: Int): Double = dicePerRoll * log2(6.0)
 
 /** Every Roll of [dice] dice in order, 11…1 to 66…6, counting up from the last like an odometer. */
 internal fun rollsInOrder(dice: Int): Sequence<List<Int>> = sequence {
@@ -81,4 +98,4 @@ data class WordListInfo(
 )
 
 internal fun wordListInfo(id: WordListId, name: String?, dicePerRoll: Int, updated: Boolean = false) =
-    WordListInfo(id, name, pow6(dicePerRoll), dicePerRoll * log2(6.0), updated)
+    WordListInfo(id, name, pow6(dicePerRoll), bitsPerRoll(dicePerRoll), updated)

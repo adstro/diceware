@@ -89,7 +89,7 @@ internal suspend fun stageWordList(
                 if (fields.size == 1) reject(ImportError.MissingRoll(line))
                 if (fields.size > 2) reject(ImportError.WordHasWhitespace(line))
                 val roll = fields[0]
-                if (roll.any { it !in '1'..'6' }) reject(ImportError.InvalidRoll(line))
+                if (!isRoll(roll)) reject(ImportError.InvalidRoll(line))
                 if (rollLength == 0) rollLength = roll.length
                 if (roll.length != rollLength) reject(ImportError.MixedRollLength(line))
                 word = fields[1]
@@ -161,12 +161,6 @@ private fun String.fields(): List<String> {
     }
     if (start >= 0) fields += substring(start)
     return fields
-}
-
-internal fun pow6(n: Int): Long {
-    var result = 1L
-    repeat(n) { result *= 6 }
-    return result
 }
 
 private fun exactLog6(count: Long): Int? {
@@ -267,15 +261,16 @@ private class WordListWriter(fileSystem: FileSystem, directory: Path) {
 
 /** A Word List on disk, as [stageWordList] wrote it: a Roll is resolved by reading just its Word. */
 internal class DiskWordList(override val dicePerRoll: Int, fileSystem: FileSystem, directory: Path, name: String) : WordList {
-    private val words = fileSystem.openReadOnly(directory / "$name.$WORDS_FILE")
-    private val offsets = fileSystem.openReadOnly(directory / "$name.$OFFSETS_FILE")
+    private val words = fileSystem.openReadOnly(directory / wordListFileName(name, WORDS_FILE))
+    private val offsets = fileSystem.openReadOnly(directory / wordListFileName(name, OFFSETS_FILE))
 
     // shortcut: reads a few bytes on the caller's (main) thread per Roll; move rolling off-main if that ever shows in ANR or StrictMode reports.
     override fun resolve(roll: List<Int>): String {
-        require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
-        val index = roll.fold(0L) { acc, die -> acc * 6 + (die - 1) }
+        requireRoll(roll, dicePerRoll)
+        // The Roll's place in Roll order: its dice read as a base-6 number, 11…1 first.
+        val place = roll.fold(0L) { acc, die -> acc * 6 + (die - 1) }
         val bounds = okio.Buffer()
-        offsets.read(index * 8, bounds, 16)
+        offsets.read(place * 8, bounds, 16)
         val start = bounds.readLong()
         val end = bounds.readLong()
         val word = okio.Buffer()

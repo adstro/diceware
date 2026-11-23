@@ -39,7 +39,7 @@ struct DicewareApp: App {
     /// The core Generator over the bundled EFF Word Lists and the Custom Word Lists in `wordListsPath`,
     /// rolled by SecRandomCopyBytes, with settings saved at `settingsPath`.
     static func makeGenerator(settingsPath: String = settingsPath, wordListsPath: String = wordListsPath) -> Generator {
-        GeneratorKt.createGenerator(
+        CreateGeneratorKt.createGenerator(
             // @Sendable: the core calls this off the main thread, so it must not inherit main-actor isolation.
             readBundled: { @Sendable wordList in
                 // The lists ship inside the app bundle, so a missing or unreadable file is a build error.
