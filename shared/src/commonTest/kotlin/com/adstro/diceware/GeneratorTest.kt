@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import okio.Buffer
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
@@ -526,6 +527,60 @@ class GeneratorTest {
         generator.setMode(Mode.RANDOM)
 
         assertEquals(List(6) { "w5555" }.joinToString(" "), assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+    }
+
+    @Test
+    fun choosingACustomWordListRollsItsWordsWithItsDicePerRoll() = runTest {
+        val random = ScriptedRandom(*ones(24), *diceBytes(*IntArray(30) { 2 }))
+        val generator = generator(random)
+        generator.ready()
+        val id = generator.importCustom(5, "custom")
+
+        generator.setWordList(id)
+
+        val ready = generator.ready()
+        assertEquals(List(6) { "custom22222" }.joinToString(" "), ready.passphrase)
+        assertEquals(77.55, ready.strengthBits, 0.01)
+        assertEquals(0, random.remaining)
+    }
+
+    @Test
+    fun aSelectedCustomWordListIsRestoredInTheNextSession() = runTest {
+        val fileSystem = FakeFileSystem()
+        // The first session keeps its list open; the OS lets the next one manage it regardless.
+        fileSystem.allowDeletingOpenFiles = true
+        val firstSession = Job()
+        val first = generator(ScriptedRandom(*ones(24 + 30)), fileSystem, CoroutineScope(coroutineContext + firstSession))
+        first.ready()
+        first.setWordList(first.importCustom(5, "custom"))
+        testScheduler.advanceUntilIdle()
+        firstSession.cancelAndJoin()
+
+        val second = generator(ScriptedRandom(*ones(30)), fileSystem)
+
+        assertEquals(List(6) { "custom11111" }.joinToString(" "), second.ready().passphrase)
+    }
+
+    @Test
+    fun deletingTheSelectedWordListFallsBackToEffLarge() = runTest {
+        val generator = generator(ScriptedRandom(*ones(30 + 24 + 30)), wordLists = effShaped)
+        generator.ready()
+        val id = generator.importCustom(4, "custom")
+        generator.setWordList(id)
+
+        generator.library.delete(id)
+
+        val ready = generator.state.filterIsInstance<GeneratorState.Ready>().first { it.passphrase.startsWith("large") }
+        assertEquals(List(6) { "large11111" }.joinToString(" "), ready.passphrase)
+        assertEquals(EffWordList.LARGE, generator.options.value.wordList)
+    }
+
+    /** Imports a Diceware-format Custom Word List whose Words name their Roll, e.g. `custom11111`. */
+    private suspend fun Generator.importCustom(dice: Int, prefix: String): CustomWordListId {
+        val text = allRolls(dice).joinToString("\n") { "$it\t$prefix$it" }
+        library.import("$prefix.txt", text.length.toLong()) { Buffer().writeUtf8(text) }
+        assertEquals(ImportState.Imported(prefix), library.importState.value)
+        return library.wordLists.value.last().id as CustomWordListId
     }
 
     /** Shaped like the EFF Word Lists (Large 6⁵, Shorts 6⁴); each Word names its list and Roll. */
