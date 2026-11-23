@@ -3,8 +3,10 @@ Copyright 2026 Adam Stroud
 
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-This product bundles the EFF Large Word List for Random Passphrases
-(wordlists/eff_large_wordlist.txt), published by the Electronic Frontier
-Foundation at https://www.eff.org/dice under the Creative Commons Attribution
-3.0 License (CC BY 3.0): https://creativecommons.org/licenses/by/3.0/us/
-The word list is redistributed unmodified.
+This product bundles the EFF Word Lists for Random Passphrases (Large,
+Short #1 and Short #2: wordlists/eff_large_wordlist.txt,
+wordlists/eff_short_wordlist_1.txt and wordlists/eff_short_wordlist_2_0.txt),
+published by the Electronic Frontier Foundation at https://www.eff.org/dice
+under the Creative Commons Attribution 3.0 License (CC BY 3.0):
+https://creativecommons.org/licenses/by/3.0/us/
+The word lists are redistributed unmodified.

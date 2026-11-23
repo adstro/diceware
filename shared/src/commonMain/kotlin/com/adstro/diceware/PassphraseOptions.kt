@@ -21,6 +21,7 @@ data class PassphraseOptions(
     val capitalise: Boolean = false,
     val appendDigit: Boolean = false,
     val appendSymbol: Boolean = false,
+    val wordList: EffWordList = EffWordList.LARGE,
 ) {
     companion object {
         val WORD_COUNTS = 1..20
@@ -32,6 +33,7 @@ private val separatorKey = stringPreferencesKey("separator")
 private val capitaliseKey = booleanPreferencesKey("capitalise")
 private val appendDigitKey = booleanPreferencesKey("append_digit")
 private val appendSymbolKey = booleanPreferencesKey("append_symbol")
+private val wordListKey = stringPreferencesKey("word_list")
 
 /** Saved settings are untrusted on read: anything unknown or out of range falls back to the default. */
 internal fun Preferences.toOptions(): PassphraseOptions {
@@ -42,6 +44,7 @@ internal fun Preferences.toOptions(): PassphraseOptions {
         capitalise = this[capitaliseKey] ?: defaults.capitalise,
         appendDigit = this[appendDigitKey] ?: defaults.appendDigit,
         appendSymbol = this[appendSymbolKey] ?: defaults.appendSymbol,
+        wordList = EffWordList.entries.firstOrNull { it.name == this[wordListKey] } ?: defaults.wordList,
     )
 }
 
@@ -51,4 +54,5 @@ internal fun PassphraseOptions.writeTo(preferences: androidx.datastore.preferenc
     preferences[capitaliseKey] = capitalise
     preferences[appendDigitKey] = appendDigit
     preferences[appendSymbolKey] = appendSymbol
+    preferences[wordListKey] = wordList.name
 }

@@ -79,7 +79,7 @@ class GeneratorTest {
 
         assertEquals(PassphraseOptions(), generator.options.value)
         assertEquals(
-            PassphraseOptions(6, Separator.SPACE, capitalise = false, appendDigit = false, appendSymbol = false),
+            PassphraseOptions(6, Separator.SPACE, capitalise = false, appendDigit = false, appendSymbol = false, wordList = EffWordList.LARGE),
             generator.options.value,
         )
     }
@@ -232,13 +232,93 @@ class GeneratorTest {
         assertEquals(PassphraseOptions(3, Separator.HYPHEN, true, true, true), second.options.value)
     }
 
+    @Test
+    fun effLargeIsTheDefaultSelectedWordList() = runTest {
+        val generator = generator(ScriptedRandom(*ones(30)), wordLists = effShaped)
+
+        val ready = generator.ready()
+        assertEquals(EffWordList.LARGE, generator.options.value.wordList)
+        assertEquals(List(6) { "large11111" }.joinToString(" "), ready.passphrase)
+    }
+
+    @Test
+    fun switchingToAShortWordListRerollsWithFourDicePerWord() = runTest {
+        val random = ScriptedRandom(*ones(30), *diceBytes(*IntArray(24) { 2 }))
+        val generator = generator(random, wordLists = effShaped)
+        generator.ready()
+
+        generator.setWordList(EffWordList.SHORT_2)
+
+        val ready = generator.ready()
+        assertEquals(EffWordList.SHORT_2, generator.options.value.wordList)
+        assertEquals(List(6) { "short2_2222" }.joinToString(" "), ready.passphrase)
+        // 6 × 4 × log₂6 ≈ 62.04 bits.
+        assertEquals(62.04, ready.strengthBits, 0.01)
+        assertEquals(0, random.remaining)
+    }
+
+    @Test
+    fun switchingBackToEffLargeRerollsWithFiveDicePerWord() = runTest {
+        val random = ScriptedRandom(*ones(30), *ones(24), *diceBytes(*IntArray(30) { 3 }))
+        val generator = generator(random, wordLists = effShaped)
+        generator.ready()
+        generator.setWordList(EffWordList.SHORT_1)
+
+        generator.setWordList(EffWordList.LARGE)
+
+        val ready = generator.ready()
+        assertEquals(List(6) { "large33333" }.joinToString(" "), ready.passphrase)
+        // 6 × 5 × log₂6 ≈ 77.55 bits.
+        assertEquals(77.55, ready.strengthBits, 0.01)
+        assertEquals(0, random.remaining)
+    }
+
+    @Test
+    fun selectedWordListIsRestoredInTheNextSession() = runTest {
+        val fileSystem = FakeFileSystem()
+        val firstSession = Job()
+        val first = generator(ScriptedRandom(*ones(30 + 24)), fileSystem, CoroutineScope(coroutineContext + firstSession), effShaped)
+        first.ready()
+        first.setWordList(EffWordList.SHORT_1)
+        testScheduler.advanceUntilIdle()
+        firstSession.cancelAndJoin()
+
+        val second = generator(ScriptedRandom(*ones(24)), fileSystem, wordLists = effShaped)
+
+        assertEquals(List(6) { "short1_1111" }.joinToString(" "), second.ready().passphrase)
+        assertEquals(EffWordList.SHORT_1, second.options.value.wordList)
+    }
+
+    @Test
+    fun wordListsShowEachEffWordListWithItsWordCountAndStrengthPerWord() = runTest {
+        val wordLists = generator(ScriptedRandom(), wordLists = effShaped).wordLists.value
+
+        assertEquals(listOf(EffWordList.LARGE, EffWordList.SHORT_1, EffWordList.SHORT_2), wordLists.map { it.wordList })
+        assertEquals(listOf(7776L, 1296L, 1296L), wordLists.map { it.wordCount })
+        // log₂6⁵ ≈ 12.92 and log₂6⁴ ≈ 10.34 bits per Word.
+        assertEquals(12.92, wordLists[0].strengthPerWordBits, 0.01)
+        assertEquals(10.34, wordLists[1].strengthPerWordBits, 0.01)
+        assertEquals(10.34, wordLists[2].strengthPerWordBits, 0.01)
+    }
+
+    /** Shaped like the EFF Word Lists (Large 6⁵, Shorts 6⁴); each Word names its list and Roll. */
+    private val effShaped: Map<EffWordList, WordList> = mapOf(
+        EffWordList.LARGE to rollNamed(5, "large"),
+        EffWordList.SHORT_1 to rollNamed(4, "short1_"),
+        EffWordList.SHORT_2 to rollNamed(4, "short2_"),
+    )
+
+    private fun rollNamed(dice: Int, prefix: String): WordList =
+        WordList.parse(allRolls(dice).joinToString("\n") { "$it\t$prefix$it" })
+
     private fun ones(dice: Int): IntArray = diceBytes(*IntArray(dice) { 1 })
 
     private fun TestScope.generator(
         random: RandomBytes,
         fileSystem: FakeFileSystem = FakeFileSystem(),
         scope: CoroutineScope = backgroundScope,
-    ) = Generator(rollNamedList, random, settingsIn(fileSystem, scope), scope)
+        wordLists: Map<EffWordList, WordList> = EffWordList.entries.associateWith { rollNamedList },
+    ) = Generator(wordLists, random, settingsIn(fileSystem, scope), scope)
 
     /** DataStore Preferences over an in-memory file system, so "sessions" can share it. */
     private fun settingsIn(fileSystem: FakeFileSystem, scope: CoroutineScope): DataStore<Preferences> =
