@@ -8,6 +8,7 @@ struct GeneratorView: View {
     @State private var options: PassphraseOptions?
     @State private var showingWordLists = false
     @State private var showingAbout = false
+    @State private var showingDiceEntry = false
 
     var body: some View {
         NavigationStack {
@@ -27,6 +28,7 @@ struct GeneratorView: View {
             }
             .navigationDestination(isPresented: $showingWordLists) { WordListsView(generator: generator) }
             .navigationDestination(isPresented: $showingAbout) { AboutView() }
+            .sheet(isPresented: $showingDiceEntry) { Self.diceEntrySheet(generator: generator) }
         }
         .task {
             for await newState in generator.state { state = newState }
@@ -54,13 +56,24 @@ struct GeneratorView: View {
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
                     }
+                case .awaitingDice:
+                    Text("Roll your dice and enter each Roll to build a passphrase.")
+                        .multilineTextAlignment(.center)
                 case .randomnessUnavailable:
                     Text("Secure randomness is unavailable on this device, so no passphrase was generated.")
                         .foregroundStyle(.red)
                         .multilineTextAlignment(.center)
                 }
-                Button("Roll new passphrase") { generator.regenerate() }
+                if options?.mode == .dice {
+                    Button("Enter dice") {
+                        generator.startDiceEntry()
+                        showingDiceEntry = true
+                    }
                     .buttonStyle(.borderedProminent)
+                } else {
+                    Button("Roll new passphrase") { generator.regenerate() }
+                        .buttonStyle(.borderedProminent)
+                }
                 if case .ready(let ready) = onEnum(of: state) {
                     Button("Copy") { PassphraseClipboard.copy(ready.passphrase) }
                         .buttonStyle(.bordered)
@@ -73,6 +86,11 @@ struct GeneratorView: View {
         .padding(24)
         .frame(maxWidth: 600)
     }
+
+    /// The root view's privacy cover does not reach a sheet, so the Dice entry sheet carries its own.
+    static func diceEntrySheet(generator: Generator) -> ModifiedContent<DiceEntryView, PrivacyCover> {
+        DiceEntryView(generator: generator).modifier(PrivacyCover())
+    }
 }
 
 /// Renders the core's PassphraseOptions and forwards each change to the core.
@@ -83,6 +101,11 @@ struct OptionsControls: View {
     var body: some View {
         let range = PassphraseOptions.companion.WORD_COUNTS
         VStack(spacing: 12) {
+            Picker("Mode", selection: Binding(get: { options.mode }, set: { generator.setMode(mode: $0) })) {
+                Text("Random").tag(Mode.random)
+                Text("Dice").tag(Mode.dice)
+            }
+            .pickerStyle(.segmented)
             LabeledContent("Word List") {
                 Picker(
                     "Word List",

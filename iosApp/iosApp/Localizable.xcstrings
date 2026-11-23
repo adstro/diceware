@@ -19,6 +19,12 @@
     "Copy" : {
 
     },
+    "Dice" : {
+
+    },
+    "Dice entered: %@" : {
+
+    },
     "Diceware" : {
 
     },
@@ -26,6 +32,15 @@
 
     },
     "Diceware makes a passphrase from words chosen by rolls of dice. Each roll of five dice (four for a short word list) gives a number such as 43561, which picks one word from the word list. Repeating this once per word gives a passphrase that is easy to remember and hard to guess. This app rolls each die with your device's secure random generator." : {
+
+    },
+    "Die face %lld" : {
+
+    },
+    "Digit: roll 2 dice" : {
+
+    },
+    "Done" : {
 
     },
     "EFF Large" : {
@@ -37,7 +52,16 @@
     "EFF Short #2" : {
 
     },
+    "Enter dice" : {
+
+    },
+    "Every Roll is entered." : {
+
+    },
     "Hyphen" : {
+
+    },
+    "Mode" : {
 
     },
     "More options" : {
@@ -52,7 +76,16 @@
     "Privacy" : {
 
     },
+    "Random" : {
+
+    },
+    "Remove last die" : {
+
+    },
     "Roll new passphrase" : {
+
+    },
+    "Roll your dice and enter each Roll to build a passphrase." : {
 
     },
     "Secure randomness is unavailable on this device, so no passphrase was generated." : {
@@ -67,6 +100,12 @@
     "Strength: %.1f bits" : {
 
     },
+    "Symbol: roll 2 dice" : {
+
+    },
+    "That Roll doesn't pick a digit. Roll the 2 dice again." : {
+
+    },
     "The built-in word lists are the EFF Word Lists by the Electronic Frontier Foundation (eff.org/dice), used under the Creative Commons Attribution 3.0 License (CC BY 3.0, creativecommons.org/licenses/by/3.0)." : {
 
     },
@@ -77,6 +116,9 @@
 
     },
     "What is Diceware?" : {
+
+    },
+    "Word %lld of %d: roll %d dice" : {
 
     },
     "Word List" : {
