@@ -43,18 +43,30 @@ private class InMemoryWordList(override val dicePerRoll: Int, private val wordsB
 /** Identifies a Word List: one of the bundled [EffWordList]s or a [CustomWordListId]. */
 sealed interface WordListId
 
-/** The EFF Word Lists bundled with the app, in the order they are shown; [LARGE] is the default. */
-enum class EffWordList(val fileName: String) : WordListId {
-    LARGE("eff_large_wordlist.txt"),
-    SHORT_1("eff_short_wordlist_1.txt"),
-    SHORT_2("eff_short_wordlist_2_0.txt"),
+/**
+ * The EFF Word Lists bundled with the app, in the order they are shown; [LARGE] is the default.
+ * [url] is where eff.org serves each: on www.eff.org, as eff.org itself redirects there, to another host.
+ */
+enum class EffWordList(val fileName: String, val url: String) : WordListId {
+    LARGE("eff_large_wordlist.txt", "https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt"),
+    SHORT_1("eff_short_wordlist_1.txt", "https://www.eff.org/files/2016/09/08/eff_short_wordlist_1.txt"),
+    SHORT_2("eff_short_wordlist_2_0.txt", "https://www.eff.org/files/2016/09/08/eff_short_wordlist_2_0.txt"),
 }
 
 /** A Custom Word List, identified by the SHA-256 of its Words in Roll order. */
 data class CustomWordListId(val sha256: String) : WordListId
 
-/** One row of the Word Lists screen; [name] is null for EFF Word Lists, which the apps name themselves. */
-data class WordListInfo(val id: WordListId, val name: String?, val wordCount: Long, val strengthPerWordBits: Double)
+/**
+ * One row of the Word Lists screen; [name] is null for EFF Word Lists, which the apps name themselves.
+ * [updated] is true for an EFF Word List replaced by a newer copy from eff.org.
+ */
+data class WordListInfo(
+    val id: WordListId,
+    val name: String?,
+    val wordCount: Long,
+    val strengthPerWordBits: Double,
+    val updated: Boolean = false,
+)
 
-internal fun wordListInfo(id: WordListId, name: String?, dicePerRoll: Int) =
-    WordListInfo(id, name, pow6(dicePerRoll), dicePerRoll * log2(6.0))
+internal fun wordListInfo(id: WordListId, name: String?, dicePerRoll: Int, updated: Boolean = false) =
+    WordListInfo(id, name, pow6(dicePerRoll), dicePerRoll * log2(6.0), updated)
