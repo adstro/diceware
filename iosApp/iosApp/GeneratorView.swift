@@ -10,6 +10,8 @@ struct GeneratorView: View {
     @Binding var showingWordLists: Bool
     @State private var showingAbout = false
     @State private var showingDiceEntry = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
         NavigationStack {
@@ -42,58 +44,108 @@ struct GeneratorView: View {
         }
     }
 
-    private var content: some View {
-        VStack(spacing: 24) {
-            if let state {
-                switch onEnum(of: state) {
-                // Saved settings arrive within milliseconds; showing controls before then would let them be overwritten.
-                case .loading:
-                    EmptyView()
-                case .ready(let ready):
-                    Text(ready.passphrase)
-                        // Monospaced keeps l, 1 and I distinguishable.
-                        .font(.system(.title, design: .monospaced))
-                        .multilineTextAlignment(.center)
-                    Text("Strength: \(ready.strengthBits, specifier: "%.1f") bits")
-                    if ready.isWeak {
-                        Text("Weak: below 64 bits. Add Words for a stronger passphrase.")
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                    }
-                case .awaitingDice:
-                    Text("Roll your dice and enter each Roll to build a passphrase.")
-                        .multilineTextAlignment(.center)
-                case .randomnessUnavailable:
-                    Text("Secure randomness is unavailable on this device, so no passphrase was generated.")
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
+    @ViewBuilder private var content: some View {
+        if let state {
+            if Self.sideBySide(horizontal: horizontalSizeClass, vertical: verticalSizeClass) {
+                HStack(spacing: 32) {
+                    VStack(spacing: 24) { passphrasePane(state) }
+                        .frame(maxWidth: .infinity)
+                    optionsPane(state)
+                        .frame(maxWidth: .infinity)
                 }
-                if options?.mode == .dice {
-                    Button("Enter dice") {
-                        generator.startDiceEntry()
-                        showingDiceEntry = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else {
-                    Button("Roll new passphrase") { generator.regenerate() }
-                        .buttonStyle(.borderedProminent)
+                .padding(24)
+                .frame(maxWidth: 1000)
+            } else {
+                VStack(spacing: 24) {
+                    passphrasePane(state)
+                    optionsPane(state)
                 }
-                if case .ready(let ready) = onEnum(of: state) {
-                    Button("Copy") { PassphraseClipboard.copy(ready.passphrase) }
-                        .buttonStyle(.bordered)
-                }
-                if let options, !(state is GeneratorStateLoading) {
-                    OptionsControls(generator: generator, options: options, wordLists: wordLists)
-                }
+                .padding(24)
+                .frame(maxWidth: 600)
             }
         }
-        .padding(24)
-        .frame(maxWidth: 600)
+    }
+
+    /// Passphrase and options side by side on a wide window (iPad, or any regular width) and in a short one
+    /// (iPhone landscape); one above the other otherwise.
+    static func sideBySide(horizontal: UserInterfaceSizeClass?, vertical: UserInterfaceSizeClass?) -> Bool {
+        horizontal == .regular || vertical == .compact
+    }
+
+    @ViewBuilder private func passphrasePane(_ state: GeneratorState) -> some View {
+        switch onEnum(of: state) {
+        // Saved settings arrive within milliseconds; showing controls before then would let them be overwritten.
+        case .loading:
+            EmptyView()
+        case .ready(let ready):
+            PassphraseView(ready: ready)
+            Text("Strength: \(ready.strengthBits, specifier: "%.1f") bits")
+            if ready.isWeak {
+                Text("Weak: below 64 bits. Add Words for a stronger passphrase.")
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+        case .awaitingDice:
+            Text("Roll your dice and enter each Roll to build a passphrase.")
+                .multilineTextAlignment(.center)
+        case .randomnessUnavailable:
+            Text("Secure randomness is unavailable on this device, so no passphrase was generated.")
+                .foregroundStyle(.red)
+                .multilineTextAlignment(.center)
+        }
+        if options?.mode == .dice {
+            Button("Enter dice") {
+                generator.startDiceEntry()
+                showingDiceEntry = true
+            }
+            .buttonStyle(.borderedProminent)
+        } else {
+            Button("Roll new passphrase") { generator.regenerate() }
+                .buttonStyle(.borderedProminent)
+        }
+        if case .ready(let ready) = onEnum(of: state) {
+            Button("Copy") { PassphraseClipboard.copy(ready.passphrase) }
+                .buttonStyle(.bordered)
+        }
+    }
+
+    @ViewBuilder private func optionsPane(_ state: GeneratorState) -> some View {
+        if let options, !(state is GeneratorStateLoading) {
+            OptionsControls(generator: generator, options: options, wordLists: wordLists)
+        }
     }
 
     /// The root view's privacy cover does not reach a sheet, so the Dice entry sheet carries its own.
     static func diceEntrySheet(generator: Generator) -> ModifiedContent<DiceEntryView, PrivacyCover> {
         DiceEntryView(generator: generator).modifier(PrivacyCover())
+    }
+}
+
+/// The Passphrase as one line of text to the eye, but to VoiceOver one element per Word (then per appended
+/// character), each with a "Spell out" action that reads the whole Passphrase character by character.
+struct PassphraseView: View {
+    let ready: GeneratorStateReady
+
+    var body: some View {
+        Text(ready.passphrase)
+            // Monospaced keeps l, 1 and I distinguishable.
+            .font(.system(.title, design: .monospaced))
+            .multilineTextAlignment(.center)
+            .accessibilityRepresentation {
+                HStack {
+                    ForEach(Array(ready.parts.enumerated()), id: \.offset) { _, part in
+                        Text(part.spoken)
+                            .accessibilityAction(named: "Spell out") {
+                                UIAccessibility.post(notification: .announcement, argument: Self.spelledOut(ready.passphrase))
+                            }
+                    }
+                }
+            }
+    }
+
+    /// The Passphrase for VoiceOver to read one character at a time, naming capitals and punctuation.
+    static func spelledOut(_ passphrase: String) -> NSAttributedString {
+        NSAttributedString(string: passphrase, attributes: [.accessibilitySpeechSpellOut: true])
     }
 }
 
