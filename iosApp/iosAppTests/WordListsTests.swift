@@ -5,16 +5,22 @@ import Testing
 
 @MainActor
 struct WordListsTests {
-    /// Each test gets its own settings file, so saved settings never leak between tests or into the app.
-    private let generator = DicewareApp.makeGenerator(
-        settingsPath: FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).preferences_pb").path
-    )
+    private static let temporary = FileManager.default.temporaryDirectory
+    private let wordListsDirectory = DicewareApp.excludedFromBackup(temporary.appendingPathComponent(UUID().uuidString))
+    /// Each test gets its own settings file and Word Lists, so nothing leaks between tests or into the app.
+    private let generator: Generator
+
+    init() {
+        generator = DicewareApp.makeGenerator(
+            settingsPath: Self.temporary.appendingPathComponent("\(UUID().uuidString).preferences_pb").path,
+            wordListsPath: wordListsDirectory.path
+        )
+    }
 
     @Test func choosingEffShort1RerollsWithItsWordsAndFourDicePerWord() async throws {
         _ = try #require(await ready())
 
-        generator.setWordList(wordList: .short1)
+        generator.setWordList(wordList: await loaded { !$0.isEmpty }[1].id)
 
         let ready = try #require(await ready { $0.strengthBits < 70 })
         let words = ready.passphrase.split(separator: " ").map(String.init)
@@ -24,14 +30,54 @@ struct WordListsTests {
         #expect(abs(ready.strengthBits - 62.04) < 0.01)
     }
 
-    @Test func wordListsShowEachEffWordListWithItsWordCountAndStrengthPerWord() {
-        let rows = generator.wordLists.value.map { "\(WordListsView.name(of: $0.wordList)): \(WordListsView.details(of: $0))" }
+    @Test func wordListsShowEachEffWordListWithItsWordCountAndStrengthPerWord() async {
+        let rows = await loaded { !$0.isEmpty }.map { "\(WordListsView.name(of: $0)): \(WordListsView.details(of: $0))" }
 
         #expect(rows == [
             "EFF Large: 7,776 Words · 12.9 bits per Word",
             "EFF Short #1: 1,296 Words · 10.3 bits per Word",
             "EFF Short #2: 1,296 Words · 10.3 bits per Word",
         ])
+    }
+
+    @Test func aPickedFileIsImportedNamedAfterItAndCanBeRenamedAndDeleted() async throws {
+        let file = Self.temporary.appendingPathComponent("Animals.txt")
+        try (0..<1296).map { "animal\($0)" }.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+        _ = await loaded { !$0.isEmpty }
+
+        await DicewareApp.importFile(at: file, into: generator.library)
+
+        let imported = try #require(await loaded { $0.count == 4 }.last)
+        #expect("\(WordListsView.name(of: imported)): \(WordListsView.details(of: imported))" == "Animals: 1,296 Words · 10.3 bits per Word")
+        let id = try #require(imported.id as? CustomWordListId)
+
+        generator.library.rename(id: id, name: "Beasts")
+        #expect(await loaded { $0.last?.name == "Beasts" }.count == 4)
+
+        generator.library.delete(id: id)
+        #expect(await loaded { $0.count == 3 }.count == 3)
+    }
+
+    @Test func anInvalidFileIsRejectedNamingTheLine() async throws {
+        let file = Self.temporary.appendingPathComponent("bad.txt")
+        try (0..<1296).map { $0 == 7 ? "ice cream" : "w\($0)" }.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+
+        await DicewareApp.importFile(at: file, into: generator.library)
+
+        let failed = try #require(generator.library.importState.value as? ImportStateFailed)
+        #expect(WordListsView.message(for: failed.error) == "Not imported: the Word on line 8 contains a space.")
+    }
+
+    @Test func customWordListsAreExcludedFromBackup() throws {
+        let values = try wordListsDirectory.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        #expect(values.isExcludedFromBackup == true)
+        #expect(try URL(fileURLWithPath: DicewareApp.wordListsPath).resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup == true)
+    }
+
+    /// The first Word Lists state matching `until`.
+    private func loaded(until: ([WordListInfo]) -> Bool) async -> [WordListInfo] {
+        for await lists in generator.library.wordLists where until(lists) { return lists }
+        return []
     }
 
     /// Waits out the first read of saved settings, then returns the first Ready state matching `until`.

@@ -6,7 +6,8 @@ struct GeneratorView: View {
     let generator: Generator
     @State private var state: GeneratorState?
     @State private var options: PassphraseOptions?
-    @State private var showingWordLists = false
+    @State private var wordLists: [WordListInfo] = []
+    @Binding var showingWordLists: Bool
     @State private var showingAbout = false
     @State private var showingDiceEntry = false
 
@@ -35,6 +36,9 @@ struct GeneratorView: View {
         }
         .task {
             for await newOptions in generator.options { options = newOptions }
+        }
+        .task {
+            for await newWordLists in generator.library.wordLists { wordLists = newWordLists }
         }
     }
 
@@ -79,7 +83,7 @@ struct GeneratorView: View {
                         .buttonStyle(.bordered)
                 }
                 if let options, !(state is GeneratorStateLoading) {
-                    OptionsControls(generator: generator, options: options)
+                    OptionsControls(generator: generator, options: options, wordLists: wordLists)
                 }
             }
         }
@@ -93,10 +97,11 @@ struct GeneratorView: View {
     }
 }
 
-/// Renders the core's PassphraseOptions and forwards each change to the core.
+/// Renders the core's PassphraseOptions, with every Word List to pick from, and forwards each change to the core.
 struct OptionsControls: View {
     let generator: Generator
     let options: PassphraseOptions
+    let wordLists: [WordListInfo]
 
     var body: some View {
         let range = PassphraseOptions.companion.WORD_COUNTS
@@ -109,9 +114,13 @@ struct OptionsControls: View {
             LabeledContent("Word List") {
                 Picker(
                     "Word List",
-                    selection: Binding(get: { options.wordList }, set: { generator.setWordList(wordList: $0) })
+                    // Word List ids are Kotlin objects behind a protocol, so the Picker selects by position.
+                    selection: Binding(
+                        get: { wordLists.firstIndex { ($0.id as AnyObject).isEqual(options.wordList) } ?? 0 },
+                        set: { generator.setWordList(wordList: wordLists[$0].id) }
+                    )
                 ) {
-                    ForEach(EffWordList.allCases, id: \.self) { Text(WordListsView.name(of: $0)).tag($0) }
+                    ForEach(wordLists.indices, id: \.self) { Text(WordListsView.name(of: wordLists[$0])).tag($0) }
                 }
             }
             Stepper(
