@@ -66,6 +66,18 @@ class ImportWordListTest {
     }
 
     @Test
+    fun theEffLargeFileSharedFromAnotherAppIsAlreadyThere() {
+        shadowOf(app.contentResolver).registerInputStream(shared, app.assets.open(EffWordList.LARGE.fileName))
+
+        launch(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_STREAM, shared))
+
+        rule.waitUntil(5_000) { library.importState.value is ImportState.Failed }
+        rule.onNodeWithText("Not imported: already imported as EFF Large.").assertIsDisplayed()
+        assertEquals(3, library.wordLists.value.size)
+        rule.onNodeWithText("OK").performClick()
+    }
+
+    @Test
     fun aFileUriFromAnotherAppIsNeverRead() {
         // A file:// URI could name this app's own private files.
         launch(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(app.filesDir.resolve("diceware.preferences_pb")), "text/plain"))

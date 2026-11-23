@@ -111,10 +111,7 @@ internal suspend fun HttpClient.download(url: String): Buffer {
 }
 
 /** Every Word in Roll order, by resolving each Roll in turn (ADR 0002: there is no index access). */
-internal fun WordList.wordsInRollOrder(): Sequence<String> = (0 until pow6(dicePerRoll)).asSequence().map { index ->
-    var rest = index
-    resolve(List(dicePerRoll) { (rest % 6 + 1).toInt().also { rest /= 6 } }.reversed())
-}
+internal fun WordList.wordsInRollOrder(): Sequence<String> = rollsInOrder(dicePerRoll).map(::resolve)
 
 /** The SHA-256 an import would give these Words: each followed by `\n`, in Roll order. */
 internal fun WordList.sha256(): String {

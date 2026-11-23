@@ -261,10 +261,12 @@ fun importErrorMessage(error: ImportError): String = when (error) {
     is ImportError.InvalidRoll -> stringResource(R.string.import_invalid_roll, error.line)
     is ImportError.MixedRollLength -> stringResource(R.string.import_mixed_roll_length, error.line)
     is ImportError.MissingRoll -> stringResource(R.string.import_missing_roll, error.line)
+    is ImportError.RollNotFound -> stringResource(R.string.import_roll_not_found, error.roll)
     is ImportError.RepeatedRoll -> stringResource(R.string.import_repeated_roll, error.line, error.firstLine)
     is ImportError.LineTooLong -> stringResource(R.string.import_line_too_long, error.line)
     is ImportError.NotText -> stringResource(R.string.import_not_text, error.line)
     is ImportError.AlreadyImported -> stringResource(R.string.import_already_imported, error.name)
+    is ImportError.AlreadyImportedAsEff -> stringResource(R.string.import_already_imported, stringResource(wordListNames.getValue(error.wordList)))
     ImportError.Unreadable -> stringResource(R.string.import_unreadable)
     ImportError.StorageFailed -> stringResource(R.string.import_storage_failed)
 }

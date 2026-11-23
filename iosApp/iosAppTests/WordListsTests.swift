@@ -94,6 +94,13 @@ struct WordListsTests {
             == "EFF Short #2 from eff.org is not a valid Word List. Not imported: the Word on line 8 contains a space. Nothing was changed.")
     }
 
+    @Test func importingAnEffWordListOrSkippingARollSaysSo() {
+        #expect(WordListsView.message(for: ImportErrorAlreadyImportedAsEff(wordList: .large))
+            == "Not imported: already imported as EFF Large.")
+        #expect(WordListsView.message(for: ImportErrorRollNotFound(roll: "1122"))
+            == "Not imported: no line has the Roll 1122.")
+    }
+
     @Test func customWordListsAreExcludedFromBackup() throws {
         let values = try wordListsDirectory.resourceValues(forKeys: [.isExcludedFromBackupKey])
         #expect(values.isExcludedFromBackup == true)

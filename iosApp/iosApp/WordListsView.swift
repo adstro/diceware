@@ -201,6 +201,8 @@ struct WordListsView: View {
             String(localized: "Not imported: the Roll on line \(e.line.formatted()) has a different number of dice from line 1.")
         case .missingRoll(let e):
             String(localized: "Not imported: line \(e.line.formatted()) has no Roll.")
+        case .rollNotFound(let e):
+            String(localized: "Not imported: no line has the Roll \(e.roll).")
         case .repeatedRoll(let e):
             String(localized: "Not imported: the Roll on line \(e.line.formatted()) repeats the Roll on line \(e.firstLine.formatted()).")
         case .lineTooLong(let e):
@@ -209,6 +211,8 @@ struct WordListsView: View {
             String(localized: "Not imported: line \(e.line.formatted()) is not UTF-8 text.")
         case .alreadyImported(let e):
             String(localized: "Not imported: already imported as \(e.name).")
+        case .alreadyImportedAsEff(let e):
+            String(localized: "Not imported: already imported as \(name(of: e.wordList)).")
         case .unreadable:
             String(localized: "Not imported: the file could not be read.")
         case .storageFailed:
