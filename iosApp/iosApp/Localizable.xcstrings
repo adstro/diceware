@@ -13,10 +13,19 @@
     "Add a symbol" : {
 
     },
+    "Cancel" : {
+
+    },
     "Capitalise each Word" : {
 
     },
     "Copy" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@?" : {
 
     },
     "Dice" : {
@@ -61,13 +70,64 @@
     "Hyphen" : {
 
     },
+    "Import" : {
+
+    },
+    "Imported %@." : {
+
+    },
+    "Importing Word List…" : {
+
+    },
     "Mode" : {
 
     },
     "More options" : {
 
     },
+    "Name" : {
+
+    },
     "None" : {
+
+    },
+    "Not imported: already imported as %@." : {
+
+    },
+    "Not imported: line %@ has no Roll." : {
+
+    },
+    "Not imported: line %@ is not UTF-8 text." : {
+
+    },
+    "Not imported: line %@ is too long to be a Word." : {
+
+    },
+    "Not imported: line %@, “%@”, repeats the Word on line %@ (ignoring case)." : {
+
+    },
+    "Not imported: the Roll on line %@ has a different number of dice from line 1." : {
+
+    },
+    "Not imported: the Roll on line %@ must be digits 1 to 6." : {
+
+    },
+    "Not imported: the Roll on line %@ repeats the Roll on line %@." : {
+
+    },
+    "Not imported: the Word on line %@ contains a space." : {
+
+    },
+    "Not imported: the file could not be read." : {
+
+    },
+    "Not imported: the file has %@ Words, but a Word List needs exactly 6ⁿ Words (1,296, 7,776, 46,656, …)." : {
+
+    },
+    "Not imported: there is not enough storage space. Nothing was saved." : {
+
+    },
+    "OK" : {
 
     },
     "Period" : {
@@ -80,6 +140,12 @@
 
     },
     "Remove last die" : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Word List" : {
 
     },
     "Roll new passphrase" : {

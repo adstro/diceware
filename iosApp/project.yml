@@ -20,6 +20,16 @@ targets:
         buildPhase: resources
       - path: ../wordlists/eff_short_wordlist_2_0.txt
         buildPhase: resources
+    # "Open in…" for text files: the system copies them into the app's Inbox, which the app deletes after import.
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Word List
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.plain-text]
+        LSSupportsOpeningDocumentsInPlace: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.adstro.diceware

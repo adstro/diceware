@@ -49,6 +49,7 @@
 		9CF97482D4C29A1E4DB1152D /* AboutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutTests.swift; sourceTree = "<group>"; };
 		A4F95918719AE0E046394A1B /* eff_large_wordlist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = eff_large_wordlist.txt; sourceTree = "<group>"; };
 		C095A36BFED3221DEBB61DE0 /* WordListsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordListsTests.swift; sourceTree = "<group>"; };
+		C117AD187833E2513BD2F553 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CB496A3E2AB8440C7772E874 /* GeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorTests.swift; sourceTree = "<group>"; };
 		CF3462B42767C2967F05A7FC /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		DF3162CD893D14FEEF6D05E1 /* eff_short_wordlist_2_0.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = eff_short_wordlist_2_0.txt; sourceTree = "<group>"; };
@@ -62,6 +63,7 @@
 				8023B194DC87D47B1D3E8337 /* DiceEntryView.swift */,
 				8CAF795E7EEBD8D4C4FF1A9A /* DicewareApp.swift */,
 				6BD206ECC829DA9444FFD9D0 /* GeneratorView.swift */,
+				C117AD187833E2513BD2F553 /* Info.plist */,
 				6A8D1EB5C724332B1C0F728D /* Localizable.xcstrings */,
 				4BFDC36845AC6ACC365AD7BC /* Privacy.swift */,
 				0CCB595B68A2330C5FE3ECF8 /* WordListsView.swift */,
@@ -420,6 +422,7 @@
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Diceware;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -444,6 +447,7 @@
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Diceware;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
