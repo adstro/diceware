@@ -33,6 +33,9 @@ data object WordListsRoute : NavKey
 @Serializable
 data object AboutRoute : NavKey
 
+@Serializable
+data object DiceEntryRoute : NavKey
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -56,9 +59,14 @@ class MainActivity : ComponentActivity() {
                                 onCopy = ::copySensitive,
                                 onWordLists = dropUnlessResumed { backStack.add(WordListsRoute) },
                                 onAbout = dropUnlessResumed { backStack.add(AboutRoute) },
+                                onEnterDice = dropUnlessResumed {
+                                    generator.startDiceEntry()
+                                    backStack.add(DiceEntryRoute)
+                                }.takeIf { options.mode == Mode.DICE },
                             ) { modifier ->
                                 OptionsControls(
                                     options,
+                                    onMode = generator::setMode,
                                     onWordList = generator::setWordList,
                                     onWordCount = generator::setWordCount,
                                     onSeparator = generator::setSeparator,
@@ -72,6 +80,15 @@ class MainActivity : ComponentActivity() {
                         entry<WordListsRoute> {
                             val wordLists by generator.wordLists.collectAsStateWithLifecycle()
                             WordListsScreen(wordLists, onNavigateUp = { backStack.removeLastOrNull() })
+                        }
+                        entry<DiceEntryRoute> {
+                            val entry by generator.diceEntry.collectAsStateWithLifecycle()
+                            DiceEntryScreen(
+                                entry,
+                                onDie = generator::enterDie,
+                                onRemoveLastDie = generator::removeLastDie,
+                                onNavigateUp = { backStack.removeLastOrNull() },
+                            )
                         }
                         entry<AboutRoute> { AboutScreen(onNavigateUp = { backStack.removeLastOrNull() }) }
                     },
