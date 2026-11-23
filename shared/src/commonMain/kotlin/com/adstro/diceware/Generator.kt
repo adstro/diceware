@@ -1,20 +1,14 @@
 package com.adstro.diceware
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import okio.FileSystem
-import okio.Path.Companion.toPath
-import kotlin.math.log2
 
 sealed interface GeneratorState {
     /** Saved settings are still being read; nothing is rolled until they are known. */
@@ -33,9 +27,6 @@ sealed interface GeneratorState {
 
 /** Strength below this many bits gets a warning. */
 const val WEAK_BELOW_BITS = 64.0
-
-/** Widely accepted by sites; 12 symbols so each gets exactly 3 of a two-dice Roll's 36 outcomes. */
-private const val SYMBOLS = "!@#$%&*-_+=?"
 
 /**
  * Generator screen state: once the saved [options] are read, a Passphrase is rolled;
@@ -144,105 +135,3 @@ class Generator(
 }
 
 private object NeedMoreDice : Exception()
-
-/**
- * A Passphrase built Roll by Roll from a source of dice: the one Roll resolution for both modes (ADR 0002).
- * In Dice Mode the source runs out mid-way, and the draft then holds the Words built so far.
- */
-private class Draft(private val options: PassphraseOptions, private val wordList: WordList) {
-    val words = mutableListOf<String>()
-    var digit: Int? = null
-    var symbol: Char? = null
-    var rerollDigit = false
-    var diceInCompleteRolls = 0
-
-    fun build(nextDie: () -> Int) {
-        while (words.size < options.wordCount) {
-            val word = wordList.resolve(List(wordList.dicePerRoll) { nextDie() })
-            words += if (options.capitalise) word.replaceFirstChar { it.uppercase() } else word
-            diceInCompleteRolls += wordList.dicePerRoll
-        }
-        // Outcomes 0–29 give each digit three chances; the other 6 are rolled again so no digit is favoured.
-        while (options.appendDigit && digit == null) {
-            val outcome = twoDiceOutcome(nextDie)
-            if (outcome < 30) digit = outcome / 3 else rerollDigit = true
-        }
-        if (options.appendSymbol) symbol = SYMBOLS[twoDiceOutcome(nextDie) / 3]
-    }
-
-    val passphrase: String
-        get() = words.joinToString(options.separator.text) + (digit?.toString() ?: "") + (symbol?.toString() ?: "")
-
-    // Capitalisation is guessable, so it adds no Strength.
-    val strengthBits: Double
-        get() = options.wordCount * wordList.dicePerRoll * log2(6.0) +
-            (if (options.appendDigit) log2(10.0) else 0.0) +
-            (if (options.appendSymbol) log2(12.0) else 0.0)
-
-    fun entry(roll: List<Int>): DiceEntryState {
-        val step = when {
-            words.size < options.wordCount -> DiceStep.WORD
-            options.appendDigit && digit == null -> DiceStep.DIGIT
-            options.appendSymbol && symbol == null -> DiceStep.SYMBOL
-            else -> DiceStep.DONE
-        }
-        val diceInRoll = when (step) {
-            DiceStep.WORD -> wordList.dicePerRoll
-            DiceStep.DIGIT, DiceStep.SYMBOL -> 2
-            DiceStep.DONE -> 0
-        }
-        return DiceEntryState(words.toList(), options.wordCount, step, diceInRoll, roll, step == DiceStep.DIGIT && rerollDigit)
-    }
-
-    /** A Roll of two dice as one of 36 equally likely outcomes, 0–35. */
-    private fun twoDiceOutcome(nextDie: () -> Int): Int =
-        ((nextDie() - 1) * 6 + (nextDie() - 1)).also { diceInCompleteRolls += 2 }
-}
-
-/** What the next Roll of Dice entry is for. */
-enum class DiceStep { WORD, DIGIT, SYMBOL, DONE }
-
-/**
- * Dice entry screen state: the Words whose Rolls are complete, and the dice entered so far for the current
- * Roll, which needs [diceInRoll] dice. [rerollDigit] asks for a new two-dice Roll after an unmapped digit outcome.
- */
-data class DiceEntryState(
-    val words: List<String> = emptyList(),
-    val wordCount: Int = 0,
-    val step: DiceStep = DiceStep.WORD,
-    val diceInRoll: Int = 0,
-    val roll: List<Int> = emptyList(),
-    val rerollDigit: Boolean = false,
-)
-
-// DataStore allows one instance per file per process, but apps and tests may create several Generators.
-// shortcut: not thread-safe, fine while Generators are only created on the main thread.
-private val settingsByPath = mutableMapOf<String, DataStore<Preferences>>()
-
-// Like settings, one library per directory per process, so two never write the same index.
-// shortcut: not thread-safe, fine while Generators are only created on the main thread.
-private val librariesByPath = mutableMapOf<String, WordListLibrary>()
-
-/**
- * The production Generator: the bundled EFF Word Lists, whose Diceware-format text [readBundled] returns
- * (called off the main thread), plus Custom Word Lists in [wordListsPath], rolled by the OS secure random
- * generator, with settings saved in the DataStore Preferences file at [settingsPath] (ending `.preferences_pb`).
- */
-fun createGenerator(
-    readBundled: (EffWordList) -> String,
-    settingsPath: String,
-    wordListsPath: String,
-    scope: CoroutineScope,
-): Generator = Generator(
-    librariesByPath.getOrPut(wordListsPath) {
-        // The library outlives any one screen's scope: it is shared by every Generator in the process.
-        WordListLibrary({ EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } }, FileSystem.SYSTEM, wordListsPath.toPath(), CoroutineScope(SupervisorJob()))
-    },
-    secureRandomBytes(),
-    settingsByPath.getOrPut(settingsPath) { PreferenceDataStoreFactory.createWithPath { settingsPath.toPath() } },
-    scope,
-)
-
-/** For Swift, which can't make a [CoroutineScope]: the Generator lives on the main thread for the app's lifetime. */
-fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String, wordListsPath: String): Generator =
-    createGenerator(readBundled, settingsPath, wordListsPath, MainScope())

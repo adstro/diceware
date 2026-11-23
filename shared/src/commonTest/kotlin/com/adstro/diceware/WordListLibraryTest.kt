@@ -182,6 +182,21 @@ class WordListLibraryTest {
     }
 
     @Test
+    fun anIndexSavedByAnEarlierBuildStillLoads() = runTest {
+        val first = library()
+        first.importText("animals.txt", plain(4))
+        val id = first.loaded().last().id as CustomWordListId
+        // The index format so far: a Custom Word List has no "eff" field.
+        fileSystem.write("/lists/index.json".toPath()) { writeUtf8("""[{"sha256":"${id.sha256}","name":"Beasts","dicePerRoll":4}]""") }
+
+        fileSystem.allowDeletingOpenFiles = true
+        val second = library()
+
+        assertEquals("Beasts", second.loaded().last().name)
+        assertEquals("w7", second.wordList(id)!!.resolve(listOf(1, 1, 2, 2)))
+    }
+
+    @Test
     fun aBlankNameIsIgnored() = runTest {
         val library = library()
         library.importText("animals.txt", plain(4))
