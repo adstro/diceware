@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -50,7 +51,7 @@ fun DicewareTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratorScreen(
-    state: GeneratorState, onRegenerate: () -> Unit, onAbout: () -> Unit,
+    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onAbout: () -> Unit,
     options: @Composable (Modifier) -> Unit = {},
 ) {
     Scaffold(
@@ -98,6 +99,9 @@ fun GeneratorScreen(
                 )
             }
             Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+            if (state is GeneratorState.Ready) {
+                OutlinedButton(onClick = { onCopy(state.passphrase) }) { Text(stringResource(R.string.copy)) }
+            }
             options(readable)
         }
     }
@@ -111,6 +115,7 @@ private fun GeneratorScreenPreview() {
         GeneratorScreen(
             GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5),
             onRegenerate = {},
+            onCopy = {},
             onAbout = {},
         ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, it) }
     }

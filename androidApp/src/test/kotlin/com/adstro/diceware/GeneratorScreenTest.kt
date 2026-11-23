@@ -1,5 +1,8 @@
 package com.adstro.diceware
 
+import android.content.ClipDescription
+import android.content.ClipboardManager
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -126,10 +129,29 @@ class GeneratorScreenTest {
     @Test
     fun showsAnErrorAndNoPassphraseWhenSecureRandomnessFails() {
         rule.runOnUiThread {
-            rule.activity.setContent { DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onAbout = {}) } }
+            rule.activity.setContent {
+                DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onCopy = {}, onAbout = {}) }
+            }
         }
 
         rule.onNodeWithText(rule.activity.getString(R.string.randomness_unavailable)).assertIsDisplayed()
         rule.onNodeWithTag(PASSPHRASE_TAG).assertDoesNotExist()
+        rule.onNodeWithText(rule.activity.getString(R.string.copy)).assertDoesNotExist()
+    }
+
+    @Test
+    fun copyPutsThePassphraseOnTheClipboardMarkedSensitive() {
+        val shown = shownPassphrase()
+
+        rule.onNodeWithText(rule.activity.getString(R.string.copy)).performClick()
+
+        val clip = rule.activity.getSystemService(ClipboardManager::class.java).primaryClip!!
+        assertEquals(shown, clip.getItemAt(0).text.toString())
+        assertTrue(clip.description.extras!!.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE))
+    }
+
+    @Test
+    fun windowIsSecureSoItIsKeptOutOfScreenshotsAndRecents() {
+        assertTrue(rule.activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
     }
 }

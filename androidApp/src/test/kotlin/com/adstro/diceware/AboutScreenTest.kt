@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -28,8 +29,11 @@ class AboutScreenTest {
         rule.onNodeWithText(string(R.string.about)).performClick()
     }
 
-    private fun shownPassphrase(): String =
-        rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("")
+    /** Waits out the first read of saved settings, then returns the Passphrase on screen. */
+    private fun shownPassphrase(): String {
+        rule.waitUntil { rule.onAllNodesWithTag(PASSPHRASE_TAG).fetchSemanticsNodes().isNotEmpty() }
+        return rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("")
+    }
 
     private fun assertShown(@StringRes id: Int) {
         rule.onNodeWithText(string(id)).performScrollTo().assertIsDisplayed()
@@ -72,6 +76,7 @@ class AboutScreenTest {
 
         rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
 
+        shownPassphrase()
         rule.onNodeWithTag(PASSPHRASE_TAG).assertIsDisplayed()
     }
 }
