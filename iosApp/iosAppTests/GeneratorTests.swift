@@ -51,6 +51,24 @@ struct GeneratorTests {
         #expect(passphrase.wholeMatch(of: /([A-Z][a-z-]*-){5}[A-Z][a-z-]*[0-9][!@#$%&*\-_+=?]/) != nil)
     }
 
+    @Test func eachWordIsItsOwnVoiceOverElementAndSpellOutReadsEveryCharacter() {
+        let ready = GeneratorStateReady(passphrase: "Ab-zoom7!", strengthBits: 20, words: ["Ab", "zoom"])
+
+        #expect(ready.parts.map(\.spoken) == ["Ab", "zoom", "7", "!"])
+        let spelled = PassphraseView.spelledOut(ready.passphrase)
+        #expect(spelled.string == "Ab-zoom7!")
+        #expect(spelled.attribute(.accessibilitySpeechSpellOut, at: 0, effectiveRange: nil) as? Bool == true)
+    }
+
+    @Test func passphraseAndOptionsSitSideBySideOnIPadAndInIPhoneLandscape() {
+        // iPad, either orientation.
+        #expect(GeneratorView.sideBySide(horizontal: .regular, vertical: .regular))
+        // iPhone landscape.
+        #expect(GeneratorView.sideBySide(horizontal: .compact, vertical: .compact))
+        // iPhone portrait.
+        #expect(!GeneratorView.sideBySide(horizontal: .compact, vertical: .regular))
+    }
+
     /// Waits out the first read of saved settings, then returns the Ready state (nil if randomness failed).
     private func ready() async -> GeneratorStateReady? {
         for await state in generator.state {
