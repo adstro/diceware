@@ -158,6 +158,31 @@ class GeneratorTest {
     }
 
     @Test
+    fun aPassphraseListsItsWordsAsShownSoScreenReadersCanAnnounceEachOne() = runTest {
+        val generator = generator(ScriptedRandom(*ones(24), *ones(24), *diceBytes(1, 2, 3, 4, 6, 6, 6, 6, *IntArray(16) { 1 }, 4, 3)))
+        generator.ready()
+
+        generator.setCapitalise(true)
+        generator.setAppendDigit(true)
+
+        val ready = generator.ready()
+        assertEquals(listOf("W1234", "W6666") + List(4) { "W1111" }, ready.words)
+        assertEquals("W1234 W6666 W1111 W1111 W1111 W11116", ready.passphrase)
+    }
+
+    @Test
+    fun aPassphraseSplitsIntoPartsShownWithTheirSeparatorAndSpokenAsJustTheWordOrCharacter() {
+        val ready = GeneratorState.Ready("Ab-zoom7!", 20.0, listOf("Ab", "zoom"))
+
+        assertEquals(
+            listOf(PassphrasePart("Ab-", "Ab"), PassphrasePart("zoom", "zoom"), PassphrasePart("7", "7"), PassphrasePart("!", "!")),
+            ready.parts,
+        )
+        // No Separator: the Words simply follow each other.
+        assertEquals(listOf("ab", "cd"), GeneratorState.Ready("abcd", 20.0, listOf("ab", "cd")).parts.map { it.shown })
+    }
+
+    @Test
     fun everyDigitHasExactlyThreeOfTheThirtyMappedOutcomes() = runTest {
         val outcomes = (1..6).flatMap { a -> (1..6).map { b -> listOf(a, b) } }.take(30)
         val generator = generator(

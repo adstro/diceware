@@ -1,7 +1,6 @@
 package com.adstro.diceware
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -32,13 +31,14 @@ class WordListsScreenTest {
     @Before
     fun resetSelectedWordList() {
         val generator = ViewModelProvider(rule.activity)[GeneratorViewModel::class.java].generator
-        rule.waitUntil { generator.state.value != GeneratorState.Loading }
+        // waitUntil alone may not run the main looper the Generator resumes on, so idle it each time.
+        rule.waitUntil(5_000) { rule.waitForIdle(); generator.state.value != GeneratorState.Loading }
         rule.runOnUiThread { generator.setWordList(EffWordList.LARGE) }
     }
 
     private fun shownPassphrase(): String {
         rule.waitUntil { rule.onAllNodesWithTag(PASSPHRASE_TAG).fetchSemanticsNodes().isNotEmpty() }
-        return rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("")
+        return rule.onNodeWithTag(PASSPHRASE_TAG).fetchSemanticsNode().config[PassphraseText]
     }
 
     private fun wordsOf(fileName: String): Set<String> =
