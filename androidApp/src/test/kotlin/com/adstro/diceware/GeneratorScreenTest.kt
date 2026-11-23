@@ -126,7 +126,7 @@ class GeneratorScreenTest {
     @Test
     fun showsAnErrorAndNoPassphraseWhenSecureRandomnessFails() {
         rule.runOnUiThread {
-            rule.activity.setContent { DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}) } }
+            rule.activity.setContent { DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onAbout = {}) } }
         }
 
         rule.onNodeWithText(rule.activity.getString(R.string.randomness_unavailable)).assertIsDisplayed()
