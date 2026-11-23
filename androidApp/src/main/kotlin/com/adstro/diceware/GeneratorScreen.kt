@@ -46,10 +46,10 @@ fun DicewareTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = colors, content = content)
 }
 
-/** Renders the core's Generator state; all logic lives in the shared core. */
+/** Renders the core's Generator state; all logic lives in the shared core. [options] holds the setting controls. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit) {
+fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit, options: @Composable (Modifier) -> Unit = {}) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }) { innerPadding ->
         Column(
             modifier = Modifier
@@ -63,13 +63,26 @@ fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit) {
         ) {
             val readable = Modifier.widthIn(max = 600.dp).fillMaxWidth()
             when (state) {
-                is GeneratorState.Ready -> Text(
-                    text = state.passphrase,
-                    // Monospace keeps l, 1 and I distinguishable.
-                    style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
-                    textAlign = TextAlign.Center,
-                    modifier = readable.testTag(PASSPHRASE_TAG),
-                )
+                // Saved settings arrive within milliseconds; showing controls before then would let them be overwritten.
+                GeneratorState.Loading -> return@Column
+                is GeneratorState.Ready -> {
+                    Text(
+                        text = state.passphrase,
+                        // Monospace keeps l, 1 and I distinguishable.
+                        style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
+                        textAlign = TextAlign.Center,
+                        modifier = readable.testTag(PASSPHRASE_TAG),
+                    )
+                    Text(stringResource(R.string.strength_bits, state.strengthBits), textAlign = TextAlign.Center, modifier = readable)
+                    if (state.isWeak) {
+                        Text(
+                            stringResource(R.string.weak_warning),
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = readable,
+                        )
+                    }
+                }
                 GeneratorState.RandomnessUnavailable -> Text(
                     text = stringResource(R.string.randomness_unavailable),
                     color = MaterialTheme.colorScheme.error,
@@ -78,6 +91,7 @@ fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit) {
                 )
             }
             Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+            options(readable)
         }
     }
 }
@@ -86,5 +100,9 @@ fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit) {
 @Preview(name = "Tablet", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true)
 @Composable
 private fun GeneratorScreenPreview() {
-    DicewareTheme { GeneratorScreen(GeneratorState.Ready("abacus zoom kettle lilac boned tribute"), onRegenerate = {}) }
+    DicewareTheme {
+        GeneratorScreen(GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5), onRegenerate = {}) {
+            OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, it)
+        }
+    }
 }

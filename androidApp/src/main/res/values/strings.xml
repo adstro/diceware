@@ -3,4 +3,16 @@
     <string name="app_name">Diceware</string>
     <string name="regenerate">Roll new passphrase</string>
     <string name="randomness_unavailable">Secure randomness is unavailable on this device, so no passphrase was generated.</string>
+    <string name="strength_bits">Strength: %1$.1f bits</string>
+    <string name="weak_warning">Weak: below 64 bits. Add Words for a stronger passphrase.</string>
+    <string name="word_count">Words: %1$d</string>
+    <string name="separator">Separator</string>
+    <string name="separator_space">Space</string>
+    <string name="separator_hyphen">Hyphen</string>
+    <string name="separator_period">Period</string>
+    <string name="separator_underscore">Underscore</string>
+    <string name="separator_none">None</string>
+    <string name="capitalise">Capitalise each Word</string>
+    <string name="append_digit">Add a digit</string>
+    <string name="append_symbol">Add a symbol</string>
 </resources>
