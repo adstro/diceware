@@ -43,6 +43,7 @@
     <string name="import_invalid_roll">Not imported: the Roll on line %1$,d must be digits 1 to 6.</string>
     <string name="import_mixed_roll_length">Not imported: the Roll on line %1$,d has a different number of dice from line 1.</string>
     <string name="import_missing_roll">Not imported: line %1$,d has no Roll.</string>
+    <string name="import_roll_not_found">Not imported: no line has the Roll %1$s.</string>
     <string name="import_repeated_roll">Not imported: the Roll on line %1$,d repeats the Roll on line %2$,d.</string>
     <string name="import_line_too_long">Not imported: line %1$,d is too long to be a Word.</string>
     <string name="import_not_text">Not imported: line %1$,d is not UTF-8 text.</string>

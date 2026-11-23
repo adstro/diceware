@@ -74,10 +74,24 @@ class WordListLibraryTest {
     }
 
     @Test
-    fun rejectsADicewareListMissingARollOrWithTooFewDice() = runTest {
+    fun rejectsADicewareListMissingARollNamingTheRollOrWithTooFewDice() = runTest {
         // One Roll left out: 1295 Words, no repeats.
-        assertRejected(ImportError.WrongWordCount(1295), diceware(4).lines().drop(1).joinToString("\n"))
+        assertRejected(ImportError.RollNotFound("1111"), diceware(4).lines().drop(1).joinToString("\n"))
+        assertRejected(ImportError.RollNotFound("1122"), diceware(4).lines().filterIndexed { i, _ -> i != 7 }.joinToString("\n"))
+        assertRejected(ImportError.RollNotFound("6666"), diceware(4).lines().dropLast(1).joinToString("\n"))
         assertRejected(ImportError.WrongWordCount(216), diceware(3))
+    }
+
+    @Test
+    fun aRollMayHaveMoreThanTwentyDice() = runTest {
+        // 6²⁵ overflows a Long: the missing Roll is still named, not the dice count refused.
+        val ones = "1".repeat(24)
+        assertRejected(ImportError.RollNotFound(ones + "3"), "${ones}1\ta\n${ones}2\tb")
+    }
+
+    @Test
+    fun aFirstLineWithoutARollInAnOtherwiseDicewareListIsAMissingRoll() = runTest {
+        assertRejected(ImportError.MissingRoll(1), "w0\n" + diceware(4).lines().drop(1).joinToString("\n"))
     }
 
     @Test
@@ -90,6 +104,9 @@ class WordListLibraryTest {
     fun rejectsWordsContainingWhitespace() = runTest {
         assertRejected(ImportError.WordHasWhitespace(8), plain(4).replace("\nw7\n", "\nice cream\n"))
         assertRejected(ImportError.WordHasWhitespace(8), diceware(4).replace("\tw7\n", "\tice cream\n"))
+        // Unicode whitespace too: a no-break space and an em space.
+        assertRejected(ImportError.WordHasWhitespace(8), plain(4).replace("\nw7\n", "\nice\u00A0cream\n"))
+        assertRejected(ImportError.WordHasWhitespace(8), diceware(4).replace("\tw7\n", "\tice\u2003cream\n"))
     }
 
     @Test
@@ -135,6 +152,11 @@ class WordListLibraryTest {
 
         assertEquals(ImportState.Failed(ImportError.AlreadyImported("animals")), library.importState.value)
         assertEquals(4, library.loaded().size)
+    }
+
+    @Test
+    fun anEffWordListImportedAsACustomOneIsRejectedAsAlreadyThere() = runTest {
+        assertRejected(ImportError.AlreadyImportedAsEff(EffWordList.SHORT_1), effText(EffWordList.SHORT_1))
     }
 
     @Test
@@ -238,12 +260,14 @@ class WordListLibraryTest {
     }
 
     private fun TestScope.library(fileSystem: FileSystem = this@WordListLibraryTest.fileSystem) = WordListLibrary(
-        { EffWordList.entries.associateWith { WordList.parse(rolls(4).joinToString("\n") { "$it\teff$it" }) } },
+        { EffWordList.entries.associateWith { WordList.parse(effText(it)) } },
         fileSystem,
         "/lists".toPath(),
         backgroundScope,
         StandardTestDispatcher(testScheduler),
     )
+
+    private fun effText(list: EffWordList) = rolls(4).joinToString("\n") { "$it\t${list.name}$it" }
 
     private suspend fun WordListLibrary.loaded() = wordLists.first { it.isNotEmpty() }
 

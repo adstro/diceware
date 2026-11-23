@@ -19,11 +19,15 @@ sealed interface ImportError {
     data class InvalidRoll(val line: Long) : ImportError
     data class MixedRollLength(val line: Long) : ImportError
     data class MissingRoll(val line: Long) : ImportError
+    /** A Diceware-format file with no line for this Roll. */
+    data class RollNotFound(val roll: String) : ImportError
     data class RepeatedRoll(val line: Long, val firstLine: Long) : ImportError
     data class LineTooLong(val line: Long) : ImportError
     /** The file is not UTF-8 text. */
     data class NotText(val line: Long) : ImportError
     data class AlreadyImported(val name: String) : ImportError
+    /** The file holds the same Words as this EFF Word List. */
+    data class AlreadyImportedAsEff(val wordList: EffWordList) : ImportError
     data object Unreadable : ImportError
     /** Saving failed, most likely out of storage space. */
     data object StorageFailed : ImportError
@@ -40,10 +44,8 @@ internal const val WORDS_FILE = "words"
 internal const val OFFSETS_FILE = "offsets"
 
 private const val MAX_LINE_BYTES = 1024L
-private const val MAX_DICE = 20
 private const val RECORDS_PER_RUN = 1 shl 15
 private const val YIELD_EVERY = 4096
-private val whitespace = Regex("\\s+")
 
 /**
  * Validates a Word List streamed from [source] into the empty [directory]; throws [WordListRejected] naming
@@ -62,6 +64,7 @@ internal suspend fun stageWordList(
     val output = WordListWriter(fileSystem, directory)
     try {
         var diceware: Boolean? = null
+        var firstLine = 0L
         var rollLength = 0
         var line = 0L
         var count = 0L
@@ -75,24 +78,27 @@ internal suspend fun stageWordList(
                 if (sizeBytes > 0) progress(0.5 * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
             }
             // Malformed UTF-8 decodes to U+FFFD; importing it would silently change the Word.
-            if ('�' in text) reject(ImportError.NotText(line))
-            val trimmed = (if (line == 1L) text.removePrefix("﻿") else text).trim()
+            if ('\uFFFD' in text) reject(ImportError.NotText(line))
+            val trimmed = (if (line == 1L) text.removePrefix("\uFEFF") else text).trim()
             if (trimmed.isEmpty()) continue
-            val tokens = trimmed.split(whitespace)
-            val isDiceware = diceware ?: (tokens.size >= 2 && tokens[0].all { it.isDigit() }).also { diceware = it }
+            val fields = trimmed.fields()
+            if (diceware == null) firstLine = line
+            val isDiceware = diceware ?: (fields.size >= 2 && fields[0].all { it.isDigit() }).also { diceware = it }
             val word: String
             if (isDiceware) {
-                if (tokens.size == 1) reject(ImportError.MissingRoll(line))
-                if (tokens.size > 2) reject(ImportError.WordHasWhitespace(line))
-                val roll = tokens[0]
-                if (roll.length > MAX_DICE || roll.any { it !in '1'..'6' }) reject(ImportError.InvalidRoll(line))
+                if (fields.size == 1) reject(ImportError.MissingRoll(line))
+                if (fields.size > 2) reject(ImportError.WordHasWhitespace(line))
+                val roll = fields[0]
+                if (roll.any { it !in '1'..'6' }) reject(ImportError.InvalidRoll(line))
                 if (rollLength == 0) rollLength = roll.length
                 if (roll.length != rollLength) reject(ImportError.MixedRollLength(line))
-                word = tokens[1]
+                word = fields[1]
                 byRoll.add(Record(roll, line, word))
             } else {
-                if (tokens.size > 1) reject(ImportError.WordHasWhitespace(line))
-                word = tokens[0]
+                // A Roll on this line but not on the first: the first line is the one missing its Roll.
+                if (fields.size == 2 && fields[0].all { it.isDigit() }) reject(ImportError.MissingRoll(firstLine))
+                if (fields.size > 1) reject(ImportError.WordHasWhitespace(line))
+                word = fields[0]
                 output.write(word)
             }
             byWord.add(Record(word.lowercase(), line, word))
@@ -101,14 +107,19 @@ internal suspend fun stageWordList(
 
         val dicePerRoll: Int
         if (diceware == true) {
+            if (rollLength < 4) reject(ImportError.WrongWordCount(count))
+            // Records come in Roll order, so the first one that isn't the next Roll shows which Roll is missing.
+            val expected = rollsInOrder(rollLength).map { it.joinToString("") }.iterator()
             var previous: Record? = null
             byRoll.forEachSorted(count, { progress(0.5 + 0.25 * it) }) { record ->
                 previous?.let { if (it.key == record.key) reject(ImportError.RepeatedRoll(record.line, it.line)) }
+                val roll = expected.next()
+                if (record.key != roll) reject(ImportError.RollNotFound(roll))
                 output.write(record.word)
                 previous = record
             }
+            if (expected.hasNext()) reject(ImportError.RollNotFound(expected.next()))
             dicePerRoll = rollLength
-            if (rollLength < 4 || count != pow6(rollLength)) reject(ImportError.WrongWordCount(count))
         } else {
             dicePerRoll = exactLog6(count)?.takeIf { it >= 4 } ?: reject(ImportError.WrongWordCount(count))
         }
@@ -134,6 +145,22 @@ private fun BufferedSource.readLineBounded(lineNumber: Long): String? {
         !request(MAX_LINE_BYTES + 1) -> if (exhausted()) null else readUtf8()
         else -> reject(ImportError.LineTooLong(lineNumber))
     }
+}
+
+/** The whitespace-separated fields of this line; any Unicode whitespace separates, not just ASCII. */
+private fun String.fields(): List<String> {
+    val fields = mutableListOf<String>()
+    var start = -1
+    for (i in indices) {
+        if (this[i].isWhitespace()) {
+            if (start >= 0) fields += substring(start, i)
+            start = -1
+        } else if (start < 0) {
+            start = i
+        }
+    }
+    if (start >= 0) fields += substring(start)
+    return fields
 }
 
 internal fun pow6(n: Int): Long {

@@ -40,6 +40,18 @@ private class InMemoryWordList(override val dicePerRoll: Int, private val wordsB
     }
 }
 
+/** Every Roll of [dice] dice in order, 11…1 to 66…6, counting up from the last like an odometer. */
+internal fun rollsInOrder(dice: Int): Sequence<List<Int>> = sequence {
+    val roll = IntArray(dice) { 1 }
+    while (true) {
+        yield(roll.toList())
+        var i = dice - 1
+        while (i >= 0 && roll[i] == 6) roll[i--] = 1
+        if (i < 0) break
+        roll[i]++
+    }
+}
+
 /** Identifies a Word List: one of the bundled [EffWordList]s or a [CustomWordListId]. */
 sealed interface WordListId
 

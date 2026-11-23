@@ -118,6 +118,9 @@
     "Not imported: already imported as %@." : {
 
     },
+    "Not imported: no line has the Roll %@." : {
+
+    },
     "Not imported: line %@ has no Roll." : {
 
     },

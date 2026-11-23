@@ -137,6 +137,9 @@ class WordListLibrary(
                 }
                 val name = nameOf(fileName)
                 indexLock.withLock {
+                    EffWordList.entries.firstOrNull { effSha256(it) == staged.sha256 }?.let {
+                        throw WordListRejected(ImportError.AlreadyImportedAsEff(it))
+                    }
                     entries.value.firstOrNull { it.eff == null && it.sha256 == staged.sha256 }?.let {
                         throw WordListRejected(ImportError.AlreadyImported(it.name))
                     }
@@ -300,6 +303,13 @@ class WordListLibrary(
             publish()
         }
     }
+
+    // Hashed on first import, off the main thread; bundled lists never change while the app runs.
+    private val bundledSha256 by lazy { eff.mapValues { it.value.sha256() } }
+
+    /** The SHA-256 of the EFF Word List in use: an updated copy's, or the bundled one's. */
+    private fun effSha256(list: EffWordList): String =
+        entries.value.firstOrNull { it.eff == list }?.sha256 ?: bundledSha256.getValue(list)
 
     private fun publish() {
         val copies = effCopies.value
