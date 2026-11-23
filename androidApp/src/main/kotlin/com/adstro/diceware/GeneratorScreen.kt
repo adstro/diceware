@@ -47,11 +47,15 @@ fun DicewareTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = colors, content = content)
 }
 
-/** Renders the core's Generator state; all logic lives in the shared core. [options] holds the setting controls. */
+/**
+ * Renders the core's Generator state; all logic lives in the shared core. [options] holds the setting controls.
+ * In Dice Mode [onEnterDice] is set and replaces regenerating.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratorScreen(
     state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onWordLists: () -> Unit, onAbout: () -> Unit,
+    onEnterDice: (() -> Unit)? = null,
     options: @Composable (Modifier) -> Unit = {},
 ) {
     Scaffold(
@@ -91,6 +95,11 @@ fun GeneratorScreen(
                         )
                     }
                 }
+                GeneratorState.AwaitingDice -> Text(
+                    stringResource(R.string.awaiting_dice),
+                    textAlign = TextAlign.Center,
+                    modifier = readable,
+                )
                 GeneratorState.RandomnessUnavailable -> Text(
                     text = stringResource(R.string.randomness_unavailable),
                     color = MaterialTheme.colorScheme.error,
@@ -98,7 +107,11 @@ fun GeneratorScreen(
                     modifier = readable,
                 )
             }
-            Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+            if (onEnterDice != null) {
+                Button(onClick = onEnterDice) { Text(stringResource(R.string.enter_dice)) }
+            } else {
+                Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+            }
             if (state is GeneratorState.Ready) {
                 OutlinedButton(onClick = { onCopy(state.passphrase) }) { Text(stringResource(R.string.copy)) }
             }
@@ -118,6 +131,6 @@ private fun GeneratorScreenPreview() {
             onCopy = {},
             onWordLists = {},
             onAbout = {},
-        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, {}, it) }
+        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, {}, {}, it) }
     }
 }

@@ -33,4 +33,18 @@
     <string name="about_word_lists_body">The built-in word lists are the EFF Word Lists by the Electronic Frontier Foundation (eff.org/dice), used under the Creative Commons Attribution 3.0 License (CC BY 3.0, creativecommons.org/licenses/by/3.0).</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy_body">Diceware keeps no history of your passphrases, writes no logs and has no analytics. The only time it uses the network is when you ask it to check eff.org for updated EFF Word Lists.</string>
+    <string name="mode">Mode</string>
+    <string name="mode_random">Random</string>
+    <string name="mode_dice">Dice</string>
+    <string name="enter_dice">Enter dice</string>
+    <string name="awaiting_dice">Roll your dice and enter each Roll to build a passphrase.</string>
+    <string name="die_face">Die face %1$d</string>
+    <string name="dice_entered">Dice entered: %1$s</string>
+    <string name="remove_last_die">Remove last die</string>
+    <string name="dice_step_word">Word %1$d of %2$d: roll %3$d dice</string>
+    <string name="dice_step_digit">Digit: roll 2 dice</string>
+    <string name="dice_step_symbol">Symbol: roll 2 dice</string>
+    <string name="reroll_digit">That Roll doesn\'t pick a digit. Roll the 2 dice again.</string>
+    <string name="dice_complete">Every Roll is entered.</string>
+    <string name="dice_done">Done</string>
 </resources>

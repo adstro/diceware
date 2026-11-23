@@ -6,7 +6,10 @@ import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -24,6 +27,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RuntimeEnvironment
+import androidx.compose.ui.unit.dp
 
 @RunWith(AndroidJUnit4::class)
 class GeneratorScreenTest {
@@ -48,6 +52,7 @@ class GeneratorScreenTest {
             generator.setAppendDigit(defaults.appendDigit)
             generator.setAppendSymbol(defaults.appendSymbol)
             generator.setWordList(defaults.wordList)
+            generator.setMode(defaults.mode)
         }
     }
 
@@ -154,5 +159,45 @@ class GeneratorScreenTest {
     @Test
     fun windowIsSecureSoItIsKeptOutOfScreenshotsAndRecents() {
         assertTrue(rule.activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
+    }
+
+    @Test
+    fun diceModeBuildsThePassphraseFromEnteredDiceOneWordPerRoll() {
+        shownPassphrase()
+        rule.onNodeWithText(rule.activity.getString(R.string.mode_dice)).performScrollTo().performClick()
+        rule.onNodeWithTag(PASSPHRASE_TAG).assertDoesNotExist()
+
+        rule.onNodeWithText(rule.activity.getString(R.string.enter_dice)).performScrollTo().performClick()
+        // EFF Large: 5 dice per Roll. 11111 is "abacus", 66666 is "zoom".
+        rule.onNodeWithText(rule.activity.getString(R.string.dice_step_word, 1, 6, 5)).assertExists()
+        repeat(5) { tapDie(1) }
+        rule.onNodeWithText("abacus").assertExists()
+        repeat(5) { tapDie(6) }
+        rule.onNodeWithText("zoom").assertExists()
+
+        // A mistyped die is taken back and entered again.
+        tapDie(2)
+        rule.onNodeWithText(rule.activity.getString(R.string.remove_last_die)).performScrollTo().performClick()
+        repeat(20) { tapDie(1) }
+        rule.onNodeWithText(rule.activity.getString(R.string.dice_done)).performScrollTo().performClick()
+
+        assertEquals(listOf("abacus", "zoom") + List(4) { "abacus" }, shownPassphrase().split(" "))
+    }
+
+    @Test
+    fun dieFaceButtonsAreLabelledAndLargeEnoughToTap() {
+        shownPassphrase()
+        rule.onNodeWithText(rule.activity.getString(R.string.mode_dice)).performScrollTo().performClick()
+        rule.onNodeWithText(rule.activity.getString(R.string.enter_dice)).performScrollTo().performClick()
+
+        for (face in 1..6) {
+            rule.onNodeWithContentDescription(rule.activity.getString(R.string.die_face, face))
+                .assertWidthIsAtLeast(48.dp)
+                .assertHeightIsAtLeast(48.dp)
+        }
+    }
+
+    private fun tapDie(face: Int) {
+        rule.onNodeWithContentDescription(rule.activity.getString(R.string.die_face, face)).performScrollTo().performClick()
     }
 }
