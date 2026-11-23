@@ -1,13 +1,49 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Add a digit" : {
+
+    },
+    "Add a symbol" : {
+
+    },
+    "Capitalise each Word" : {
+
+    },
     "Diceware" : {
+
+    },
+    "Hyphen" : {
+
+    },
+    "None" : {
+
+    },
+    "Period" : {
 
     },
     "Roll new passphrase" : {
 
     },
     "Secure randomness is unavailable on this device, so no passphrase was generated." : {
+
+    },
+    "Separator" : {
+
+    },
+    "Space" : {
+
+    },
+    "Strength: %.1f bits" : {
+
+    },
+    "Underscore" : {
+
+    },
+    "Weak: below 64 bits. Add Words for a stronger passphrase." : {
+
+    },
+    "Words: %d" : {
 
     }
   },
