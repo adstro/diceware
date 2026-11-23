@@ -49,8 +49,15 @@ fun DicewareTheme(content: @Composable () -> Unit) {
 /** Renders the core's Generator state; all logic lives in the shared core. [options] holds the setting controls. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit, options: @Composable (Modifier) -> Unit = {}) {
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }) { innerPadding ->
+fun GeneratorScreen(
+    state: GeneratorState, onRegenerate: () -> Unit, onAbout: () -> Unit,
+    options: @Composable (Modifier) -> Unit = {},
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.app_name)) }, actions = { OverflowMenu(onAbout) })
+        },
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -101,8 +108,10 @@ fun GeneratorScreen(state: GeneratorState, onRegenerate: () -> Unit, options: @C
 @Composable
 private fun GeneratorScreenPreview() {
     DicewareTheme {
-        GeneratorScreen(GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5), onRegenerate = {}) {
-            OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, it)
-        }
+        GeneratorScreen(
+            GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5),
+            onRegenerate = {},
+            onAbout = {},
+        ) { OptionsControls(PassphraseOptions(), {}, {}, {}, {}, {}, it) }
     }
 }
