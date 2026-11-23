@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Core (JVM) + Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
+      - run: ./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest :androidApp:assembleDebug
+
+  ios:
+    name: Core (iOS) + iOS app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
+      - run: ./gradlew :shared:iosSimulatorArm64Test
+      - name: iOS app tests
+        working-directory: iosApp
+        run: |
+          # Runner images differ in simulators, so pick the first available iPhone.
+          udid=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          xcodebuild test -project iosApp.xcodeproj -scheme iosApp \
+            -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO
