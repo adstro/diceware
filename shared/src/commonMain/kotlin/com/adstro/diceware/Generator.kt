@@ -37,7 +37,7 @@ private const val SYMBOLS = "!@#$%&*-_+=?"
  * a fresh one on [regenerate] and on every change of a setting, which is also saved.
  */
 class Generator(
-    private val wordList: WordList,
+    private val bundled: Map<EffWordList, WordList>,
     random: RandomBytes,
     private val settings: DataStore<Preferences>,
     private val scope: CoroutineScope,
@@ -48,6 +48,10 @@ class Generator(
 
     private val mutableOptions = MutableStateFlow(PassphraseOptions())
     val options: StateFlow<PassphraseOptions> = mutableOptions.asStateFlow()
+
+    /** Word Lists screen state: every Word List, in the order shown. */
+    val wordLists: StateFlow<List<WordListInfo>> =
+        MutableStateFlow(EffWordList.entries.map { bundled.getValue(it).info(it) }).asStateFlow()
 
     init {
         scope.launch {
@@ -65,6 +69,7 @@ class Generator(
     fun setCapitalise(on: Boolean) = update { it.copy(capitalise = on) }
     fun setAppendDigit(on: Boolean) = update { it.copy(appendDigit = on) }
     fun setAppendSymbol(on: Boolean) = update { it.copy(appendSymbol = on) }
+    fun setWordList(wordList: EffWordList) = update { it.copy(wordList = wordList) }
 
     private fun update(change: (PassphraseOptions) -> PassphraseOptions) {
         val options = change(options.value)
@@ -74,6 +79,7 @@ class Generator(
     }
 
     private fun roll(options: PassphraseOptions): GeneratorState = try {
+        val wordList = bundled.getValue(options.wordList)
         val words = List(options.wordCount) {
             val word = wordList.resolve(List(wordList.dicePerRoll) { dice.roll() })
             if (options.capitalise) word.replaceFirstChar { it.uppercase() } else word
@@ -111,16 +117,17 @@ class Generator(
 private val settingsByPath = mutableMapOf<String, DataStore<Preferences>>()
 
 /**
- * The production Generator: the given Diceware-format Word List rolled by the OS secure random generator,
- * with settings saved in the DataStore Preferences file at [settingsPath] (ending `.preferences_pb`).
+ * The production Generator: the bundled EFF Word Lists, whose Diceware-format text [readBundled] returns,
+ * rolled by the OS secure random generator, with settings saved in the DataStore Preferences file at
+ * [settingsPath] (ending `.preferences_pb`).
  */
-fun createGenerator(wordListText: String, settingsPath: String, scope: CoroutineScope): Generator = Generator(
-    WordList.parse(wordListText),
+fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String, scope: CoroutineScope): Generator = Generator(
+    EffWordList.entries.associateWith { WordList.parse(readBundled(it)) },
     secureRandomBytes(),
     settingsByPath.getOrPut(settingsPath) { PreferenceDataStoreFactory.createWithPath { settingsPath.toPath() } },
     scope,
 )
 
 /** For Swift, which can't make a [CoroutineScope]: the Generator lives on the main thread for the app's lifetime. */
-fun createGenerator(wordListText: String, settingsPath: String): Generator =
-    createGenerator(wordListText, settingsPath, MainScope())
+fun createGenerator(readBundled: (EffWordList) -> String, settingsPath: String): Generator =
+    createGenerator(readBundled, settingsPath, MainScope())

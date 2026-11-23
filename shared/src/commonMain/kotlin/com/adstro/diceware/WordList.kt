@@ -1,17 +1,16 @@
 package com.adstro.diceware
 
+import kotlin.math.log2
+
 /**
  * A Word List of 6ⁿ Words, each identified by a Roll of n dice.
  * The only way to get a Word out is [resolve] with a Roll (ADR 0002): there is deliberately no index access.
+ * An interface so a disk-backed list for large Custom Word Lists can stand behind it.
  */
-class WordList private constructor(
-    val dicePerRoll: Int,
-    private val wordsByRoll: Map<String, String>,
-) {
-    fun resolve(roll: List<Int>): String {
-        require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
-        return wordsByRoll.getValue(roll.joinToString(""))
-    }
+interface WordList {
+    val dicePerRoll: Int
+
+    fun resolve(roll: List<Int>): String
 
     companion object {
         /**
@@ -29,7 +28,30 @@ class WordList private constructor(
             require(wordsByRoll.size == expected && wordsByRoll.keys.all { it.length == dicePerRoll }) {
                 "A Word List needs one Word for each of the $expected Rolls of $dicePerRoll dice"
             }
-            return WordList(dicePerRoll, wordsByRoll)
+            return InMemoryWordList(dicePerRoll, wordsByRoll)
         }
     }
+}
+
+private class InMemoryWordList(override val dicePerRoll: Int, private val wordsByRoll: Map<String, String>) : WordList {
+    override fun resolve(roll: List<Int>): String {
+        require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
+        return wordsByRoll.getValue(roll.joinToString(""))
+    }
+}
+
+/** The EFF Word Lists bundled with the app, in the order they are shown; [LARGE] is the default. */
+enum class EffWordList(val fileName: String) {
+    LARGE("eff_large_wordlist.txt"),
+    SHORT_1("eff_short_wordlist_1.txt"),
+    SHORT_2("eff_short_wordlist_2_0.txt"),
+}
+
+/** One row of the Word Lists screen. */
+data class WordListInfo(val wordList: EffWordList, val wordCount: Long, val strengthPerWordBits: Double)
+
+internal fun WordList.info(id: EffWordList): WordListInfo {
+    var wordCount = 1L
+    repeat(dicePerRoll) { wordCount *= 6 }
+    return WordListInfo(id, wordCount, dicePerRoll * log2(6.0))
 }
