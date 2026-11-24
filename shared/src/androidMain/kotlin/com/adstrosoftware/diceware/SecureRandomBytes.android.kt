@@ -6,10 +6,12 @@ import java.security.SecureRandom
 actual fun secureRandomBytes(): RandomBytes {
     val random = SecureRandom()
     return RandomBytes { bytes ->
+        // Any provider failure must surface as unavailable randomness, never a crash or a weaker fallback.
+        @Suppress("TooGenericExceptionCaught")
         try {
             random.nextBytes(bytes)
         } catch (e: RuntimeException) {
-            throw RandomnessUnavailableException("SecureRandom failed: $e")
+            throw RandomnessUnavailableException("SecureRandom failed", e)
         }
     }
 }

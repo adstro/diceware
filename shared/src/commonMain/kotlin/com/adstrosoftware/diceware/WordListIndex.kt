@@ -42,7 +42,7 @@ internal fun wordListFileName(sha256: String, file: String) = "$sha256.$file"
  * The Word Lists saved in [directory]: `index.json` naming them, beside the files of each. Change it only
  * under [lock]; the index is replaced atomically, so it never names files that aren't there.
  */
-internal class WordListIndex(private val fileSystem: FileSystem, private val directory: Path) {
+internal class WordListIndex(val fileSystem: FileSystem, val directory: Path) {
     val lock = Mutex()
     val entries = MutableStateFlow<List<IndexEntry>>(emptyList())
 

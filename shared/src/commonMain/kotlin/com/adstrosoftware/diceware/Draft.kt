@@ -31,7 +31,7 @@ internal class Draft(private val options: PassphraseOptions, private val wordLis
     }
 
     val passphrase: String
-        get() = words.joinToString(options.separator.text) + (digit?.toString() ?: "") + (symbol?.toString() ?: "")
+        get() = words.joinToString(options.separator.text) + digit?.toString().orEmpty() + symbol?.toString().orEmpty()
 
     // Capitalization is guessable, so it adds no Strength.
     val strengthBits: Double

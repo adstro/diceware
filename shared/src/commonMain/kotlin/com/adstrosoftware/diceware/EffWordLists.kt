@@ -11,9 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okio.FileSystem
 import okio.IOException
-import okio.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -23,14 +21,15 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 internal class EffWordLists(
     private val index: WordListIndex,
-    private val fileSystem: FileSystem,
-    private val directory: Path,
     private val scope: CoroutineScope,
     private val ioContext: CoroutineContext,
     httpEngine: () -> HttpClientEngine,
     private val awaitLoaded: suspend () -> Unit,
     private val onChanged: () -> Unit,
 ) {
+    private val fileSystem = index.fileSystem
+    private val directory = index.directory
+
     // Made on the first check, so there is no network client until the user asks for one.
     private val http by lazy { httpClient(httpEngine()) }
     private var bundled: Map<EffWordList, WordList> = emptyMap()
@@ -52,7 +51,7 @@ internal class EffWordLists(
     }
 
     /** The EFF Word List to resolve Rolls against, or null until loaded. */
-    fun inUse(list: EffWordList): WordList? = copies.value[list] ?: bundled[list]
+    fun inUse(list: EffWordList): WordList = copies.value[list] ?: bundled.getValue(list)
 
     /** The SHA-256 an import of the Words of [list] in use would give. */
     fun sha256InUse(list: EffWordList): String =
@@ -60,7 +59,7 @@ internal class EffWordLists(
             ?: bundledSha256.getValue(list)
 
     fun infos(): List<WordListInfo> =
-        EffWordList.entries.map { wordListInfo(it, null, inUse(it)!!.dicePerRoll, it in copies.value) }
+        EffWordList.entries.map { wordListInfo(it, null, inUse(it).dicePerRoll, it in copies.value) }
 
     /**
      * Downloads the EFF Word Lists from eff.org, validating each like an import, and compares them with the
@@ -89,7 +88,7 @@ internal class EffWordLists(
                     for (file in WORD_LIST_FILES) fileSystem.atomicMove(listStaging / file, staging / wordListFileName(staged.sha256, file))
                     found += IndexEntry.EffCopy(staged.sha256, staged.dicePerRoll, list)
                     val downloaded = DiskWordList(staged.dicePerRoll, fileSystem, staging, staged.sha256)
-                    try { change(list, inUse(list)!!, downloaded) } finally { downloaded.close() }
+                    try { change(list, inUse(list), downloaded) } finally { downloaded.close() }
                 }
                 pending = found
                 if (changes.isEmpty()) EffUpdateState.UpToDate else EffUpdateState.UpdateAvailable(changes)
