@@ -1,5 +1,6 @@
 package com.adstrosoftware.diceware
 
+import androidx.annotation.PluralsRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -67,9 +69,11 @@ fun WordListsScreen(
     onCheckForUpdates: () -> Unit,
     onApplyUpdate: () -> Unit,
     onDismissUpdate: () -> Unit,
-    onRestoreBundled: () -> Unit,
+    onRestoreBundledWordLists: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.word_lists)) },
@@ -102,7 +106,7 @@ fun WordListsScreen(
                 ListItem(
                     headlineContent = { Text(nameOf(info)) },
                     supportingContent = {
-                        val details = stringResource(R.string.word_list_details, info.wordCount, info.strengthPerWordBits)
+                        val details = pluralStringResource(R.plurals.word_list_details, info.wordCount, info.wordCount, info.strengthPerWordBits)
                         Text(if (info.updated) stringResource(R.string.word_list_updated, details) else details)
                     },
                     trailingContent = (info.id as? CustomWordListId)?.let { id ->
@@ -115,7 +119,7 @@ fun WordListsScreen(
                 checking = effUpdateState == EffUpdateState.Checking,
                 anyUpdated = wordLists.any { it.updated },
                 onCheckForUpdates = onCheckForUpdates,
-                onRestoreBundled = onRestoreBundled,
+                onRestoreBundledWordLists = onRestoreBundledWordLists,
                 modifier = readable,
             )
         }
@@ -133,8 +137,8 @@ private fun EffUpdateControls(
     checking: Boolean,
     anyUpdated: Boolean,
     onCheckForUpdates: () -> Unit,
-    onRestoreBundled: () -> Unit,
-    modifier: Modifier,
+    onRestoreBundledWordLists: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (checking) {
@@ -143,7 +147,7 @@ private fun EffUpdateControls(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onCheckForUpdates, enabled = !checking) { Text(stringResource(R.string.eff_check_for_updates)) }
-            TextButton(onClick = onRestoreBundled, enabled = anyUpdated && !checking) { Text(stringResource(R.string.eff_restore_bundled)) }
+            TextButton(onClick = onRestoreBundledWordLists, enabled = anyUpdated && !checking) { Text(stringResource(R.string.eff_restore_bundled)) }
         }
     }
 }
@@ -178,7 +182,7 @@ private fun EffChange(change: EffWordListChange) {
             Text(stringResource(R.string.eff_change_reordered, name))
             return
         }
-        Text(stringResource(R.string.eff_change, name, change.wordsAdded, change.wordsRemoved))
+        Text(pluralStringResource(R.plurals.eff_change, change.wordsAdded, name, change.wordsAdded, change.wordsRemoved))
         if (change.sampleAdded.isNotEmpty()) Text(stringResource(R.string.eff_change_added, sample(change.sampleAdded, change.wordsAdded)))
         if (change.sampleRemoved.isNotEmpty()) Text(stringResource(R.string.eff_change_removed, sample(change.sampleRemoved, change.wordsRemoved)))
     }
@@ -197,7 +201,7 @@ private fun effUpdateErrorMessage(error: EffUpdateError): String = when (error) 
 }
 
 @Composable
-private fun ImportProgress(progress: Double, onCancel: () -> Unit, modifier: Modifier) {
+private fun ImportProgress(progress: Double, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.importing))
@@ -255,7 +259,7 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
 /** Why an import was rejected, naming the offending line. */
 @Composable
 fun importErrorMessage(error: ImportError): String = when (error) {
-    is ImportError.WrongWordCount -> stringResource(R.string.import_wrong_word_count, error.wordCount)
+    is ImportError.WrongWordCount -> pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
     is ImportError.DuplicateWord -> stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
     is ImportError.WordHasWhitespace -> stringResource(R.string.import_word_has_whitespace, error.line)
     is ImportError.InvalidRoll -> stringResource(R.string.import_invalid_roll, error.line)
@@ -270,6 +274,11 @@ fun importErrorMessage(error: ImportError): String = when (error) {
     ImportError.Unreadable -> stringResource(R.string.import_unreadable)
     ImportError.StorageFailed -> stringResource(R.string.import_storage_failed)
 }
+
+/** The core counts in Long; a count too large for Int takes the form for Int.MAX_VALUE. */
+@Composable
+private fun pluralStringResource(@PluralsRes id: Int, count: Long, vararg formatArgs: Any): String =
+    pluralStringResource(id, count.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), *formatArgs)
 
 @Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)
 @Preview(name = "Large font", device = "spec:width=411dp,height=891dp", fontScale = 2f, showBackground = true)
@@ -286,7 +295,7 @@ private fun WordListsScreenPreview() {
             ImportState.Importing(0.4),
             EffUpdateState.Idle,
             onNavigateUp = {}, onImport = {}, onCancelImport = {}, onDismissImportResult = {}, onRename = { _, _ -> }, onDelete = {},
-            onCheckForUpdates = {}, onApplyUpdate = {}, onDismissUpdate = {}, onRestoreBundled = {},
+            onCheckForUpdates = {}, onApplyUpdate = {}, onDismissUpdate = {}, onRestoreBundledWordLists = {},
         )
     }
 }

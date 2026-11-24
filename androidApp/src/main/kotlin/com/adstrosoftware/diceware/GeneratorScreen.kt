@@ -31,7 +31,9 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,10 +80,15 @@ fun DicewareTheme(content: @Composable () -> Unit) {
 @Composable
 fun GeneratorScreen(
     state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onWordLists: () -> Unit, onAbout: () -> Unit,
+    modifier: Modifier = Modifier,
     onEnterDice: (() -> Unit)? = null,
     options: @Composable (Modifier) -> Unit = {},
 ) {
+    // One movable instance, so the controls keep their state when the window crosses the expanded-width breakpoint.
+    val currentOptions by rememberUpdatedState(options)
+    val movableOptions = remember { movableContentOf { slotModifier: Modifier -> currentOptions(slotModifier) } }
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.app_name)) }, actions = { OverflowMenu(onWordLists, onAbout) })
         },
@@ -104,7 +111,7 @@ fun GeneratorScreen(
                     Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
-                ) { options(readable) }
+                ) { movableOptions(readable) }
             }
         } else {
             Column(
@@ -113,7 +120,7 @@ fun GeneratorScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             ) {
                 PassphrasePane(state, onRegenerate, onCopy, onEnterDice, readable)
-                options(readable)
+                movableOptions(readable)
             }
         }
     }
@@ -127,44 +134,47 @@ private fun isWidthExpanded(): Boolean {
         .isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 }
 
-/** The Passphrase (or why there is none), its Strength and the actions on it; emitted into the caller's Column. */
+/** The Passphrase (or why there is none), its Strength and the actions on it. */
 @Composable
 private fun PassphrasePane(
-    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onEnterDice: (() -> Unit)?, readable: Modifier,
+    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onEnterDice: (() -> Unit)?, modifier: Modifier = Modifier,
 ) {
-    when (state) {
-        GeneratorState.Loading -> {}
-        is GeneratorState.Ready -> {
-            Passphrase(state, readable)
-            Text(stringResource(R.string.strength_bits, state.strengthBits), textAlign = TextAlign.Center, modifier = readable)
-            if (state.isWeak) {
-                Text(
-                    stringResource(R.string.weak_warning),
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    modifier = readable,
-                )
+    val fill = Modifier.fillMaxWidth()
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        when (state) {
+            GeneratorState.Loading -> {}
+            is GeneratorState.Ready -> {
+                Passphrase(state, fill)
+                Text(stringResource(R.string.strength_bits, state.strengthBits), textAlign = TextAlign.Center, modifier = fill)
+                if (state.isWeak) {
+                    Text(
+                        stringResource(R.string.weak_warning),
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = fill,
+                    )
+                }
             }
+            GeneratorState.AwaitingDice -> Text(
+                stringResource(R.string.awaiting_dice),
+                textAlign = TextAlign.Center,
+                modifier = fill,
+            )
+            GeneratorState.RandomnessUnavailable -> Text(
+                text = stringResource(R.string.randomness_unavailable),
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = fill,
+            )
         }
-        GeneratorState.AwaitingDice -> Text(
-            stringResource(R.string.awaiting_dice),
-            textAlign = TextAlign.Center,
-            modifier = readable,
-        )
-        GeneratorState.RandomnessUnavailable -> Text(
-            text = stringResource(R.string.randomness_unavailable),
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-            modifier = readable,
-        )
-    }
-    if (onEnterDice != null) {
-        Button(onClick = onEnterDice) { Text(stringResource(R.string.enter_dice)) }
-    } else {
-        Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
-    }
-    if (state is GeneratorState.Ready) {
-        OutlinedButton(onClick = { onCopy(state.passphrase) }) { Text(stringResource(R.string.copy)) }
+        if (onEnterDice != null) {
+            Button(onClick = onEnterDice) { Text(stringResource(R.string.enter_dice)) }
+        } else {
+            Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+        }
+        if (state is GeneratorState.Ready) {
+            OutlinedButton(onClick = { onCopy(state.passphrase) }) { Text(stringResource(R.string.copy)) }
+        }
     }
 }
 
@@ -177,33 +187,35 @@ private var SemanticsPropertyReceiver.passphraseText by PassphraseText
  * character), each with a "Spell out" action that reads the whole Passphrase character by character.
  */
 @Composable
-private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier) {
+private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier = Modifier) {
     val resources = LocalResources.current
     // Changing text in a polite live region is how Compose announces; the count lets the same text be announced again.
     var spellOuts by remember(state.passphrase) { mutableIntStateOf(0) }
     val spellOut = listOf(CustomAccessibilityAction(stringResource(R.string.spell_out)) { spellOuts++; true })
-    FlowRow(
-        modifier.testTag(PASSPHRASE_TAG).semantics { passphraseText = state.passphrase },
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        state.parts.forEach { (shown, spoken) ->
-            Text(
-                text = shown,
-                // Monospace keeps l, 1 and I distinguishable.
-                style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier.testTag(PASSPHRASE_PART_TAG).semantics {
-                    contentDescription = spoken
-                    customActions = spellOut
-                },
-            )
+    Box(modifier) {
+        FlowRow(
+            Modifier.fillMaxWidth().testTag(PASSPHRASE_TAG).semantics { passphraseText = state.passphrase },
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            state.parts.forEach { (shown, spoken) ->
+                Text(
+                    text = shown,
+                    // Monospace keeps l, 1 and I distinguishable.
+                    style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
+                    modifier = Modifier.testTag(PASSPHRASE_PART_TAG).semantics {
+                        contentDescription = spoken
+                        customActions = spellOut
+                    },
+                )
+            }
         }
+        Box(
+            Modifier.size(1.dp).testTag(SPELLED_OUT_TAG).semantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = if (spellOuts == 0) "" else spelledOut(state.passphrase, resources) + " ".repeat((spellOuts + 1) % 2)
+            },
+        )
     }
-    Box(
-        Modifier.size(1.dp).testTag(SPELLED_OUT_TAG).semantics {
-            liveRegion = LiveRegionMode.Polite
-            contentDescription = if (spellOuts == 0) "" else spelledOut(state.passphrase, resources) + " ".repeat((spellOuts + 1) % 2)
-        },
-    )
 }
 
 const val PASSPHRASE_PART_TAG = "passphrase_part"

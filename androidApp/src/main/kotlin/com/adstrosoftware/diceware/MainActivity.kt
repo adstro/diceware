@@ -19,6 +19,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
+import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -82,86 +84,90 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         // A restored activity already handled its intent before it was recreated.
         if (savedInstanceState == null) importFrom(intent)
-        setContent {
-            DicewareTheme {
-                val generator = viewModel.generator
-                val backStack = rememberNavBackStack(GeneratorRoute)
-                if (showWordLists) {
-                    LaunchedEffect(Unit) {
-                        if (backStack.lastOrNull() != WordListsRoute) backStack.add(WordListsRoute)
-                        showWordLists = false
-                    }
-                }
-                NavDisplay(
-                    backStack = backStack,
-                    onBack = { backStack.removeLastOrNull() },
-                    entryProvider = entryProvider {
-                        entry<GeneratorRoute> {
-                            val state by generator.state.collectAsStateWithLifecycle()
-                            val options by generator.options.collectAsStateWithLifecycle()
-                            val wordLists by generator.library.wordLists.collectAsStateWithLifecycle()
-                            GeneratorScreen(
-                                state,
-                                onRegenerate = generator::regenerate,
-                                onCopy = ::copySensitive,
-                                onWordLists = dropUnlessResumed { backStack.add(WordListsRoute) },
-                                onAbout = dropUnlessResumed { backStack.add(AboutRoute) },
-                                onEnterDice = dropUnlessResumed {
-                                    generator.startDiceEntry()
-                                    backStack.add(DiceEntryRoute)
-                                }.takeIf { options.mode == Mode.DICE },
-                            ) { modifier ->
-                                OptionsControls(
-                                    options,
-                                    wordLists,
-                                    onMode = generator::setMode,
-                                    onWordList = generator::setWordList,
-                                    onWordCount = generator::setWordCount,
-                                    onSeparator = generator::setSeparator,
-                                    onCapitalize = generator::setCapitalize,
-                                    onAppendDigit = generator::setAppendDigit,
-                                    onAppendSymbol = generator::setAppendSymbol,
-                                    modifier = modifier,
-                                )
-                            }
-                        }
-                        entry<WordListsRoute> {
-                            val library = generator.library
-                            val wordLists by library.wordLists.collectAsStateWithLifecycle()
-                            val importState by library.importState.collectAsStateWithLifecycle()
-                            val effUpdateState by library.effUpdateState.collectAsStateWithLifecycle()
-                            val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                                uri?.let(viewModel::import)
-                            }
-                            WordListsScreen(
-                                wordLists,
-                                importState,
-                                effUpdateState,
-                                onNavigateUp = { backStack.removeLastOrNull() },
-                                onImport = { pickFile.launch(arrayOf("text/*")) },
-                                onCancelImport = library::cancelImport,
-                                onDismissImportResult = library::dismissImportResult,
-                                onRename = library::rename,
-                                onDelete = library::delete,
-                                onCheckForUpdates = viewModel::checkForEffUpdates,
-                                onApplyUpdate = library::applyEffUpdate,
-                                onDismissUpdate = library::dismissEffUpdate,
-                                onRestoreBundled = library::restoreBundledEffWordLists,
-                            )
-                        }
-                        entry<DiceEntryRoute> {
-                            val entry by generator.diceEntry.collectAsStateWithLifecycle()
-                            DiceEntryScreen(
-                                entry,
-                                onDie = generator::enterDie,
-                                onRemoveLastDie = generator::removeLastDie,
-                                onNavigateUp = { backStack.removeLastOrNull() },
-                            )
-                        }
-                        entry<AboutRoute> { AboutScreen(onNavigateUp = { backStack.removeLastOrNull() }) }
-                    },
-                )
+        setContent { DicewareTheme { Navigation() } }
+    }
+
+    @Composable
+    private fun Navigation() {
+        val generator = viewModel.generator
+        val backStack = rememberNavBackStack(GeneratorRoute)
+        if (showWordLists) {
+            LaunchedEffect(Unit) {
+                if (backStack.lastOrNull() != WordListsRoute) backStack.add(WordListsRoute)
+                showWordLists = false
             }
+        }
+        NavDisplay(
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            entryProvider = entryProvider {
+                entry<GeneratorRoute> { GeneratorEntry(generator, backStack) }
+                entry<WordListsRoute> {
+                    val library = generator.library
+                    val wordLists by library.wordLists.collectAsStateWithLifecycle()
+                    val importState by library.importState.collectAsStateWithLifecycle()
+                    val effUpdateState by library.effUpdateState.collectAsStateWithLifecycle()
+                    val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                        uri?.let(viewModel::import)
+                    }
+                    WordListsScreen(
+                        wordLists,
+                        importState,
+                        effUpdateState,
+                        onNavigateUp = { backStack.removeLastOrNull() },
+                        onImport = { pickFile.launch(arrayOf("text/*")) },
+                        onCancelImport = library::cancelImport,
+                        onDismissImportResult = library::dismissImportResult,
+                        onRename = library::rename,
+                        onDelete = library::delete,
+                        onCheckForUpdates = viewModel::checkForEffUpdates,
+                        onApplyUpdate = library::applyEffUpdate,
+                        onDismissUpdate = library::dismissEffUpdate,
+                        onRestoreBundledWordLists = library::restoreBundledEffWordLists,
+                    )
+                }
+                entry<DiceEntryRoute> {
+                    val entry by generator.diceEntry.collectAsStateWithLifecycle()
+                    DiceEntryScreen(
+                        entry,
+                        onDie = generator::enterDie,
+                        onRemoveLastDie = generator::removeLastDie,
+                        onNavigateUp = { backStack.removeLastOrNull() },
+                    )
+                }
+                entry<AboutRoute> { AboutScreen(onNavigateUp = { backStack.removeLastOrNull() }) }
+            },
+        )
+    }
+
+    @Composable
+    private fun GeneratorEntry(generator: Generator, backStack: NavBackStack<NavKey>) {
+        val state by generator.state.collectAsStateWithLifecycle()
+        val options by generator.options.collectAsStateWithLifecycle()
+        val wordLists by generator.library.wordLists.collectAsStateWithLifecycle()
+        GeneratorScreen(
+            state,
+            onRegenerate = generator::regenerate,
+            onCopy = ::copySensitive,
+            onWordLists = dropUnlessResumed { backStack.add(WordListsRoute) },
+            onAbout = dropUnlessResumed { backStack.add(AboutRoute) },
+            onEnterDice = dropUnlessResumed {
+                generator.startDiceEntry()
+                backStack.add(DiceEntryRoute)
+            }.takeIf { options.mode == Mode.DICE },
+        ) { modifier ->
+            OptionsControls(
+                options,
+                wordLists,
+                onMode = generator::setMode,
+                onWordList = generator::setWordList,
+                onWordCount = generator::setWordCount,
+                onSeparator = generator::setSeparator,
+                onCapitalize = generator::setCapitalize,
+                onAppendDigit = generator::setAppendDigit,
+                onAppendSymbol = generator::setAppendSymbol,
+                modifier = modifier,
+            )
         }
     }
 }
