@@ -19,10 +19,10 @@ internal class Draft(private val options: PassphraseOptions, private val wordLis
     fun build(nextDie: () -> Int) {
         while (words.size < options.wordCount) {
             val word = wordList.resolve(List(wordList.dicePerRoll) { nextDie() })
-            words += if (options.capitalise) word.replaceFirstChar { it.uppercase() } else word
+            words += if (options.capitalize) word.replaceFirstChar { it.uppercase() } else word
             diceInCompleteRolls += wordList.dicePerRoll
         }
-        // Outcomes 0–29 give each digit three chances; the other 6 are rolled again so no digit is favoured.
+        // Outcomes 0–29 give each digit three chances; the other 6 are rolled again so no digit is favored.
         while (options.appendDigit && digit == null) {
             val outcome = twoDiceOutcome(nextDie)
             if (outcome < 30) digit = outcome / 3 else rerollDigit = true
@@ -33,7 +33,7 @@ internal class Draft(private val options: PassphraseOptions, private val wordLis
     val passphrase: String
         get() = words.joinToString(options.separator.text) + (digit?.toString() ?: "") + (symbol?.toString() ?: "")
 
-    // Capitalisation is guessable, so it adds no Strength.
+    // Capitalization is guessable, so it adds no Strength.
     val strengthBits: Double
         get() = options.wordCount * bitsPerRoll(wordList.dicePerRoll) +
             (if (options.appendDigit) log2(10.0) else 0.0) +

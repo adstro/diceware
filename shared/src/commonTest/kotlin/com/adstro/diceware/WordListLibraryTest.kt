@@ -209,7 +209,7 @@ class WordListLibraryTest {
     }
 
     @Test
-    fun aCancelledImportImportsNothing() = runTest {
+    fun aCanceledImportImportsNothing() = runTest {
         val library = library()
         library.loaded()
         val importing = launch { library.importText("big.txt", plain(6)) }

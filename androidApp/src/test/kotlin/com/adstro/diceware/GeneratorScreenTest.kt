@@ -52,7 +52,7 @@ class GeneratorScreenTest {
             val defaults = PassphraseOptions()
             generator.setWordCount(defaults.wordCount)
             generator.setSeparator(defaults.separator)
-            generator.setCapitalise(defaults.capitalise)
+            generator.setCapitalize(defaults.capitalize)
             generator.setAppendDigit(defaults.appendDigit)
             generator.setAppendSymbol(defaults.appendSymbol)
             generator.setWordList(defaults.wordList)
@@ -114,10 +114,10 @@ class GeneratorScreenTest {
     }
 
     @Test
-    fun capitaliseDigitAndSymbolTogglesShapeThePassphrase() {
+    fun capitalizeDigitAndSymbolTogglesShapeThePassphrase() {
         shownPassphrase()
 
-        listOf(R.string.capitalise, R.string.append_digit, R.string.append_symbol).forEach {
+        listOf(R.string.capitalize, R.string.append_digit, R.string.append_symbol).forEach {
             rule.onNodeWithText(rule.activity.getString(it)).performScrollTo().performClick()
         }
 
@@ -231,7 +231,7 @@ class GeneratorScreenTest {
     }
 
     @Test
-    fun dieFaceButtonsAreLabelledAndLargeEnoughToTap() {
+    fun dieFaceButtonsAreLabeledAndLargeEnoughToTap() {
         shownPassphrase()
         rule.onNodeWithText(rule.activity.getString(R.string.mode_dice)).performScrollTo().performClick()
         rule.onNodeWithText(rule.activity.getString(R.string.enter_dice)).performScrollTo().performClick()

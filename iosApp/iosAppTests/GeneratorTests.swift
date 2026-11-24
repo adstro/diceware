@@ -43,7 +43,7 @@ struct GeneratorTests {
         _ = try #require(await ready())
 
         generator.setSeparator(separator: .hyphen)
-        generator.setCapitalise(on: true)
+        generator.setCapitalize(on: true)
         generator.setAppendDigit(on: true)
         generator.setAppendSymbol(on: true)
 

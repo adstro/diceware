@@ -44,7 +44,7 @@ fun OptionsControls(
     onWordList: (WordListId) -> Unit,
     onWordCount: (Int) -> Unit,
     onSeparator: (Separator) -> Unit,
-    onCapitalise: (Boolean) -> Unit,
+    onCapitalize: (Boolean) -> Unit,
     onAppendDigit: (Boolean) -> Unit,
     onAppendSymbol: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -90,7 +90,7 @@ fun OptionsControls(
             }
         }
 
-        ToggleRow(R.string.capitalise, options.capitalise, onCapitalise)
+        ToggleRow(R.string.capitalize, options.capitalize, onCapitalize)
         ToggleRow(R.string.append_digit, options.appendDigit, onAppendDigit)
         ToggleRow(R.string.append_symbol, options.appendSymbol, onAppendSymbol)
     }

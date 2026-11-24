@@ -28,7 +28,7 @@ struct DiceEntryTests {
         #expect(ready.passphrase == "abacus zoom abacus abacus abacus abacus")
     }
 
-    @Test func dieButtonsAreLabelledForVoiceOver() {
+    @Test func dieButtonsAreLabeledForVoiceOver() {
         #expect((1...6).map(DiceEntryView.label(face:)) == (1...6).map { "Die face \($0)" })
     }
 

@@ -12,7 +12,7 @@
     <string name="separator_period">Period</string>
     <string name="separator_underscore">Underscore</string>
     <string name="separator_none">None</string>
-    <string name="capitalise">Capitalise each Word</string>
+    <string name="capitalize">Capitalize each Word</string>
     <string name="append_digit">Add a digit</string>
     <string name="append_symbol">Add a symbol</string>
     <string name="copy">Copy</string>

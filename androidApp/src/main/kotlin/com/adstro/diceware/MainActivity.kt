@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
                                     onWordList = generator::setWordList,
                                     onWordCount = generator::setWordCount,
                                     onSeparator = generator::setSeparator,
-                                    onCapitalise = generator::setCapitalise,
+                                    onCapitalize = generator::setCapitalize,
                                     onAppendDigit = generator::setAppendDigit,
                                     onAppendSymbol = generator::setAppendSymbol,
                                     modifier = modifier,
