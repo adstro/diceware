@@ -5,4 +5,14 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.skie) apply false
+    alias(libs.plugins.detekt)
 }
+
+detekt {
+    source.setFrom(fileTree(".") { include("shared/src/**/*.kt", "androidApp/src/**/*.kt") })
+    config.setFrom("config/detekt.yml")
+    buildUponDefaultConfig = true
+    parallel = true
+}
+
+dependencies { detektPlugins(libs.compose.rules.detekt) }

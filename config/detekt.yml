@@ -1,0 +1,118 @@
+# Guards against known Kotlin and Compose antipatterns. Run with `./gradlew detekt`.
+# Formatting-only rules are off: they flag style, not bugs.
+style:
+  MaxLineLength:
+    active: false
+  MagicNumber:
+    active: false
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+  # A declarative UI tree is long by nature; Compose rules guard its structure instead.
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  # A flat `when` mapping each case to a value is a table, not branching logic.
+  CyclomaticComplexMethod:
+    ignoreSimpleWhenEntries: true
+  TooManyFunctions:
+    ignorePrivate: true
+
+exceptions:
+  # Failures become typed screen state on purpose, and the app never logs (privacy),
+  # so a caught exception is not meant to travel further. Empty catch blocks are still flagged.
+  SwallowedException:
+    active: false
+
+# Compose rules (io.nlopez.compose.rules), as recommended upstream.
+Compose:
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  ComposableNestingDepth:
+    active: false # Opt-in, disabled by default. Turn on if you want to enforce a maximum nesting depth in your composables.
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  ConditionHoist:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentTrailingLambda:
+    active: true
+  ContentSlotReused:
+    active: true
+  DefaultsVisibility:
+    active: true
+  InvalidReadOnlyComposable:
+    active: true
+  LambdaParameterEventTrailing:
+    active: true
+  LambdaParameterInRestartableEffect:
+    active: true
+  Material2:
+    active: false # Opt-in, disabled by default. Turn on if you want to disallow Material 2 usages.
+  MissingNonRestartableComposable:
+    active: true
+  MissingReadOnlyComposable:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierMissing:
+    active: true
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierShouldBeForwardedToEveryBranch:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  ParameterNaming:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  PreviewNaming:
+    active: false # Opt-in, disabled by default.
+  PreviewPublic:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  StaleRememberUpdatedStateInRemember:
+    active: true
+  StateParam:
+    active: true
+  UnnecessaryComposable:
+    active: true
+  UnnecessaryLaunchedEffect:
+    active: true
+  UnstableCollections:
+    active: false # Opt-in, disabled by default. Turn on if you want to enforce this (e.g. you have strong skipping disabled)
+  VarsWithoutStateBacking:
+    active: true
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true
