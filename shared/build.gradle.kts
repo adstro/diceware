@@ -10,7 +10,7 @@ plugins {
 kotlin {
     jvmToolchain(21)
     android {
-        namespace = "com.adstro.diceware.shared"
+        namespace = "com.adstrosoftware.diceware.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
