@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  spelling:
+    name: American English (en-US)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: pipx run codespell==2.4.3
+
   android:
     name: Core (JVM) + Android
     runs-on: ubuntu-latest
