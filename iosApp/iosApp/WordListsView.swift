@@ -154,14 +154,14 @@ struct WordListsView: View {
         switch onEnum(of: error) {
         case .offline:
             String(localized: "Couldn’t reach eff.org. Check your connection and try again. Nothing was changed.")
-        case .httpStatus(let e):
-            String(localized: "eff.org answered with error \(e.code). Nothing was changed.")
+        case .httpStatus(let detail):
+            String(localized: "eff.org answered with error \(detail.code). Nothing was changed.")
         case .tooLarge:
             String(localized: "The download from eff.org was over 1 MB, so it was refused. Nothing was changed.")
         case .redirected:
             String(localized: "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
-        case .invalid(let e):
-            String(localized: "\(name(of: e.wordList)) from eff.org is not a valid Word List. \(message(for: e.error)) Nothing was changed.")
+        case .invalid(let detail):
+            String(localized: "\(name(of: detail.wordList)) from eff.org is not a valid Word List. \(message(for: detail.error)) Nothing was changed.")
         case .storageFailed:
             String(localized: "There is not enough storage space for the update. Nothing was changed.")
         }
@@ -189,30 +189,30 @@ struct WordListsView: View {
     /// Why an import was rejected, naming the offending line.
     static func message(for error: ImportError) -> String {
         switch onEnum(of: error) {
-        case .wrongWordCount(let e):
-            String(localized: "Not imported: the file has \(e.wordCount.formatted()) Words, but a Word List needs exactly 6ⁿ Words (1,296, 7,776, 46,656, …).")
-        case .duplicateWord(let e):
-            String(localized: "Not imported: line \(e.line.formatted()), “\(e.word)”, repeats the Word on line \(e.firstLine.formatted()) (ignoring case).")
-        case .wordHasWhitespace(let e):
-            String(localized: "Not imported: the Word on line \(e.line.formatted()) contains a space.")
-        case .invalidRoll(let e):
-            String(localized: "Not imported: the Roll on line \(e.line.formatted()) must be digits 1 to 6.")
-        case .mixedRollLength(let e):
-            String(localized: "Not imported: the Roll on line \(e.line.formatted()) has a different number of dice from line 1.")
-        case .missingRoll(let e):
-            String(localized: "Not imported: line \(e.line.formatted()) has no Roll.")
-        case .rollNotFound(let e):
-            String(localized: "Not imported: no line has the Roll \(e.roll).")
-        case .repeatedRoll(let e):
-            String(localized: "Not imported: the Roll on line \(e.line.formatted()) repeats the Roll on line \(e.firstLine.formatted()).")
-        case .lineTooLong(let e):
-            String(localized: "Not imported: line \(e.line.formatted()) is too long to be a Word.")
-        case .notText(let e):
-            String(localized: "Not imported: line \(e.line.formatted()) is not UTF-8 text.")
-        case .alreadyImported(let e):
-            String(localized: "Not imported: already imported as \(e.name).")
-        case .alreadyImportedAsEff(let e):
-            String(localized: "Not imported: already imported as \(name(of: e.wordList)).")
+        case .wrongWordCount(let detail):
+            String(localized: "Not imported: the file has \(detail.wordCount.formatted()) Words, but a Word List needs exactly 6ⁿ Words (1,296, 7,776, 46,656, …).")
+        case .duplicateWord(let detail):
+            String(localized: "Not imported: line \(detail.line.formatted()), “\(detail.word)”, repeats the Word on line \(detail.firstLine.formatted()) (ignoring case).")
+        case .wordHasWhitespace(let detail):
+            String(localized: "Not imported: the Word on line \(detail.line.formatted()) contains a space.")
+        case .invalidRoll(let detail):
+            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) must be digits 1 to 6.")
+        case .mixedRollLength(let detail):
+            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) has a different number of dice from line 1.")
+        case .missingRoll(let detail):
+            String(localized: "Not imported: line \(detail.line.formatted()) has no Roll.")
+        case .rollNotFound(let detail):
+            String(localized: "Not imported: no line has the Roll \(detail.roll).")
+        case .repeatedRoll(let detail):
+            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) repeats the Roll on line \(detail.firstLine.formatted()).")
+        case .lineTooLong(let detail):
+            String(localized: "Not imported: line \(detail.line.formatted()) is too long to be a Word.")
+        case .notText(let detail):
+            String(localized: "Not imported: line \(detail.line.formatted()) is not UTF-8 text.")
+        case .alreadyImported(let detail):
+            String(localized: "Not imported: already imported as \(detail.name).")
+        case .alreadyImportedAsEff(let detail):
+            String(localized: "Not imported: already imported as \(name(of: detail.wordList)).")
         case .unreadable:
             String(localized: "Not imported: the file could not be read.")
         case .storageFailed:
