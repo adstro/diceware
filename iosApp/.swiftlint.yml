@@ -1,0 +1,31 @@
+# Guards against known Swift and SwiftUI antipatterns. Run `swiftlint` from iosApp/.
+included:
+  - iosApp
+  - iosAppTests
+# Formatting-only rules: they flag style, not bugs.
+disabled_rules:
+  - line_length
+  - trailing_comma
+opt_in_rules:
+  - accessibility_label_for_image
+  - accessibility_trait_for_button
+  - contains_over_filter_count
+  - discarded_notification_center_observer
+  - discouraged_optional_boolean
+  - empty_count
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - legacy_objc_type
+  - private_swiftui_state
+  - reduce_into
+  - sorted_first_last
+  - unhandled_throwing_task
+  - unowned_variable_capture
+  - weak_delegate
+# A flat `switch` mapping each case to a value is a table, not branching logic.
+cyclomatic_complexity:
+  ignores_case_statements: true
+strict: true

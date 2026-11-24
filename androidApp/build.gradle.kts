@@ -9,6 +9,13 @@ android {
     namespace = "com.adstrosoftware.diceware"
     // Declares the unqualified values/ strings as en-US (res/resources.properties) and lists it as the app's language.
     androidResources { generateLocaleConfig = true }
+    lint {
+        // Also lints :shared, so the core's commonMain and androidMain are covered.
+        checkDependencies = true
+        warningsAsErrors = true
+        // These track the latest released versions, so they change without any change to the code.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion", "OldTargetApi")
+    }
     // Compose UI 1.13 needs compileSdk 37.1.
     compileSdk { version = release(37) { minorApiLevel = 1 } }
     defaultConfig {
