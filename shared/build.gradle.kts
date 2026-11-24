@@ -5,7 +5,15 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.skie)
+    alias(libs.plugins.detekt)
 }
+
+detekt {
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+dependencies { detektPlugins(libs.compose.rules.detekt) }
 
 kotlin {
     jvmToolchain(21)
