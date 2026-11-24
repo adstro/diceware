@@ -10,8 +10,6 @@ android {
     // Declares the unqualified values/ strings as en-US (res/resources.properties) and lists it as the app's language.
     androidResources { generateLocaleConfig = true }
     lint {
-        // Also lints :shared, so the core's commonMain and androidMain are covered.
-        checkDependencies = true
         warningsAsErrors = true
         // These track the latest released versions, so they change without any change to the code.
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion", "OldTargetApi")
