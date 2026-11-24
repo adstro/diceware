@@ -132,8 +132,13 @@ class EffUpdateTest {
     }
 
     @Test
-    fun aRedirectToAnotherHostOrToHttpIsRefused() = runTest {
-        for (location in listOf("https://eff.example/eff_large_wordlist.txt", "http://www.eff.org/files/eff_large_wordlist.txt")) {
+    fun aRedirectToAnotherHostToHttpOrToAMalformedUrlIsRefused() = runTest {
+        val locations = listOf(
+            "https://eff.example/eff_large_wordlist.txt",
+            "http://www.eff.org/files/eff_large_wordlist.txt",
+            "https://www.eff.org:notaport/files/eff_large_wordlist.txt",
+        )
+        for (location in locations) {
             // Wherever it leads serves a valid list, so only the redirect itself can fail the check.
             handler = { request ->
                 if (request.url.toString() == location) respond(bundledText(EffWordList.LARGE), HttpStatusCode.OK)
