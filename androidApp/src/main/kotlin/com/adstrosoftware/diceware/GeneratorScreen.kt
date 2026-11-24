@@ -192,7 +192,7 @@ private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier = Modifie
     // Changing text in a polite live region is how Compose announces; the count lets the same text be announced again.
     var spellOuts by remember(state.passphrase) { mutableIntStateOf(0) }
     val spellOut = listOf(CustomAccessibilityAction(stringResource(R.string.spell_out)) { spellOuts++; true })
-    Box(modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
         FlowRow(
             Modifier.fillMaxWidth().testTag(PASSPHRASE_TAG).semantics { passphraseText = state.passphrase },
             horizontalArrangement = Arrangement.Center,
