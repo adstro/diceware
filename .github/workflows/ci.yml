@@ -16,6 +16,13 @@ jobs:
       - uses: actions/checkout@v5
       - run: pipx run codespell==2.4.3
 
+  analysis-bypasses:
+    name: Approved analysis bypasses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 scripts/analysis-exceptions.py
+
   android:
     name: Core (JVM) + Android
     runs-on: ubuntu-latest
@@ -27,7 +34,9 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
       - name: Static analysis (detekt, Android Lint)
-        run: ./gradlew detekt :shared:detektMainAndroid :androidApp:lintDebug
+        run: >-
+          ./gradlew detekt :shared:detektMainAndroid :shared:detektHostTestAndroid
+          :androidApp:detektDebug :androidApp:detektDebugUnitTest :androidApp:lintDebug :androidApp:lintRelease
       - run: ./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest :androidApp:assembleDebug
 
   ios:
