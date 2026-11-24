@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,6 +49,7 @@ val wordListNames = mapOf(
 
 /** A Custom Word List's own name, or the EFF Word List's display name. */
 @Composable
+@ReadOnlyComposable
 fun nameOf(info: WordListInfo): String = info.name ?: stringResource(wordListNames.getValue(info.id as EffWordList))
 
 /**
@@ -104,7 +106,7 @@ fun WordListsScreen(
             if (importState is ImportState.Importing) ImportProgress(importState.progress, onCancelImport, readable)
             wordLists.forEach { info ->
                 ListItem(
-                    headlineContent = { Text(nameOf(info)) },
+                    modifier = readable,
                     supportingContent = {
                         val details = pluralStringResource(R.plurals.word_list_details, info.wordCount, info.wordCount, info.strengthPerWordBits)
                         Text(if (info.updated) stringResource(R.string.word_list_updated, details) else details)
@@ -112,8 +114,7 @@ fun WordListsScreen(
                     trailingContent = (info.id as? CustomWordListId)?.let { id ->
                         { CustomWordListMenu(nameOf(info), onRename = { onRename(id, it) }, onDelete = { onDelete(id) }) }
                     },
-                    modifier = readable,
-                )
+                ) { Text(nameOf(info)) }
             }
             EffUpdateControls(
                 checking = effUpdateState == EffUpdateState.Checking,
@@ -191,6 +192,7 @@ private fun EffChange(change: EffWordListChange) {
 private fun sample(words: List<String>, total: Long) = (if (total > words.size) words + "…" else words).joinToString(", ")
 
 @Composable
+@ReadOnlyComposable
 private fun effUpdateErrorMessage(error: EffUpdateError): String = when (error) {
     EffUpdateError.Offline -> stringResource(R.string.eff_offline)
     is EffUpdateError.HttpStatus -> stringResource(R.string.eff_http_status, error.code)
@@ -258,6 +260,7 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
 
 /** Why an import was rejected, naming the offending line. */
 @Composable
+@ReadOnlyComposable
 fun importErrorMessage(error: ImportError): String = when (error) {
     is ImportError.WrongWordCount -> pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
     is ImportError.DuplicateWord -> stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
@@ -277,6 +280,7 @@ fun importErrorMessage(error: ImportError): String = when (error) {
 
 /** The core counts in Long; a count too large for Int takes the form for Int.MAX_VALUE. */
 @Composable
+@ReadOnlyComposable
 private fun pluralStringResource(@PluralsRes id: Int, count: Long, vararg formatArgs: Any): String =
     pluralStringResource(id, count.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), *formatArgs)
 

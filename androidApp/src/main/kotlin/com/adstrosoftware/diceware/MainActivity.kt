@@ -20,7 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -35,6 +35,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -92,7 +93,7 @@ class MainActivity : ComponentActivity() {
         val generator = viewModel.generator
         val backStack = rememberNavBackStack(GeneratorRoute)
         if (showWordLists) {
-            LaunchedEffect(Unit) {
+            SideEffect {
                 if (backStack.lastOrNull() != WordListsRoute) backStack.add(WordListsRoute)
                 showWordLists = false
             }
@@ -173,7 +174,11 @@ class MainActivity : ComponentActivity() {
 }
 
 /** Keeps the core's Generator, and so the shown Passphrase, across configuration changes. */
-class GeneratorViewModel(application: Application) : AndroidViewModel(application) {
+// @JvmOverloads keeps the (Application) constructor that the default ViewModel factory looks up.
+class GeneratorViewModel @JvmOverloads constructor(
+    application: Application,
+    private val ioContext: CoroutineContext = Dispatchers.IO,
+) : AndroidViewModel(application) {
     val generator: Generator = createGenerator(
         // Called by the core off the main thread.
         { application.assets.open(it.fileName).bufferedReader().use { reader -> reader.readText() } },
@@ -191,7 +196,7 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
         if (uri.scheme != ContentResolver.SCHEME_CONTENT) return false
         val resolver = getApplication<Application>().contentResolver
         viewModelScope.launch {
-            val (name, size) = withContext(Dispatchers.IO) { nameAndSize(resolver, uri) }
+            val (name, size) = withContext(ioContext) { nameAndSize(resolver, uri) }
             generator.library.import(name, size) {
                 resolver.openInputStream(uri)?.source() ?: throw IOException("No stream for $uri")
             }

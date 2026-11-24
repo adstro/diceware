@@ -1,10 +1,13 @@
 # Guards against known Kotlin and Compose antipatterns. Run with `./gradlew detekt`.
-# Formatting-only rules are off: they flag style, not bugs.
+# Line length is style, not a bug. Bare numbers are the domain's own (6 faces, 2 dice per digit) and read clearer inline.
 style:
   MaxLineLength:
     active: false
   MagicNumber:
     active: false
+  # Previews are called by Android Studio's preview tooling, never by the app.
+  UnusedPrivateFunction:
+    ignoreAnnotated: ['Preview']
 
 naming:
   FunctionNaming:
@@ -12,9 +15,6 @@ naming:
 
 complexity:
   LongParameterList:
-    ignoreAnnotated: ['Composable']
-  # A declarative UI tree is long by nature; Compose rules guard its structure instead.
-  LongMethod:
     ignoreAnnotated: ['Composable']
   # A flat `when` mapping each case to a value is a table, not branching logic.
   CyclomaticComplexMethod:

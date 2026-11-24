@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- tools:ignore="PluralsCandidate" marks strings whose number is a line number, not a count. -->
+<resources>
     <string name="app_name">Diceware</string>
     <string name="regenerate">Roll new passphrase</string>
     <string name="randomness_unavailable">Secure randomness is unavailable on this device, so no passphrase was generated.</string>
@@ -43,12 +42,12 @@
         <item quantity="other">Not imported: the file has %1$,d Words, but a Word List needs exactly 6ⁿ Words (1,296, 7,776, 46,656, …).</item>
     </plurals>
     <string name="import_duplicate_word">Not imported: line %1$,d, “%2$s”, repeats the Word on line %3$,d (ignoring case).</string>
-    <string name="import_word_has_whitespace" tools:ignore="PluralsCandidate">Not imported: the Word on line %1$,d contains a space.</string>
-    <string name="import_invalid_roll" tools:ignore="PluralsCandidate">Not imported: the Roll on line %1$,d must be digits 1 to 6.</string>
-    <string name="import_mixed_roll_length" tools:ignore="PluralsCandidate">Not imported: the Roll on line %1$,d has a different number of dice from line 1.</string>
-    <string name="import_missing_roll" tools:ignore="PluralsCandidate">Not imported: line %1$,d has no Roll.</string>
+    <string name="import_word_has_whitespace">Not imported, line %1$,d: the Word contains a space.</string>
+    <string name="import_invalid_roll">Not imported, line %1$,d: the Roll must be digits 1 to 6.</string>
+    <string name="import_mixed_roll_length">Not imported, line %1$,d: the Roll has a different number of dice from line 1.</string>
+    <string name="import_missing_roll">Not imported, line %1$,d: there is no Roll.</string>
     <string name="import_roll_not_found">Not imported: no line has the Roll %1$s.</string>
-    <string name="import_repeated_roll" tools:ignore="PluralsCandidate">Not imported: the Roll on line %1$,d repeats the Roll on line %2$,d.</string>
+    <string name="import_repeated_roll">Not imported, line %1$,d: the Roll repeats the Roll on line %2$,d.</string>
     <string name="import_line_too_long">Not imported: line %1$,d is too long to be a Word.</string>
     <string name="import_not_text">Not imported: line %1$,d is not UTF-8 text.</string>
     <string name="import_already_imported">Not imported: already imported as %1$s.</string>

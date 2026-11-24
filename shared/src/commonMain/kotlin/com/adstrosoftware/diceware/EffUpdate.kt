@@ -11,7 +11,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentLength
 import io.ktor.http.takeFrom
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.readBuffer
 import kotlinx.io.readByteArray
 import okio.Buffer
 import okio.HashingSink
@@ -95,7 +95,7 @@ internal suspend fun HttpClient.download(url: String): Buffer {
                     (response.contentLength() ?: 0) > MAX_DOWNLOAD_BYTES -> fail(EffUpdateError.TooLarge)
                     else -> {
                         // Read one byte past the cap to tell "exactly the cap" from "too large" without a Content-Length.
-                        val bytes = response.bodyAsChannel().readRemaining(MAX_DOWNLOAD_BYTES + 1).readByteArray()
+                        val bytes = response.bodyAsChannel().readBuffer(MAX_DOWNLOAD_BYTES + 1).readByteArray()
                         if (bytes.size > MAX_DOWNLOAD_BYTES) fail(EffUpdateError.TooLarge)
                         Buffer().write(bytes)
                     }

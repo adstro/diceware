@@ -12,9 +12,12 @@ import okio.Source
 import okio.Timeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class LargeWordListMemoryTest {
+    // The heap is measured while the import really runs on other threads, so the test uses the real dispatchers.
+    @Suppress("InjectDispatcher")
     @Test
     fun importingA6To7WordListKeepsTheLiveHeapSmallerThanTheListItself() = runBlocking {
         val directory = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "diceware-memory-${System.nanoTime()}"
@@ -34,7 +37,7 @@ class LargeWordListMemoryTest {
             sampler.cancel()
 
             assertEquals(ImportState.Imported("huge"), library.importState.value)
-            val wordList = library.wordList(library.wordLists.value.last().id)!!
+            val wordList = assertNotNull(library.wordList(library.wordLists.value.last().id))
             assertEquals("w${COUNT - 1}", wordList.resolve(List(7) { 6 }))
             val retained = liveHeap() - baseline
             // The 279,936 Words as Strings alone would take well over 10 MB.

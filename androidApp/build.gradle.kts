@@ -3,6 +3,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // Navigation 3 saves its back stack of @Serializable keys.
     alias(libs.plugins.kotlin.serialization)
+    // Type-resolved detekt (detektDebug): the Compose and coroutine rules that need types.
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    buildUponDefaultConfig = true
 }
 
 android {
@@ -29,9 +36,13 @@ android {
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
-kotlin { jvmToolchain(21) }
+kotlin {
+    jvmToolchain(21)
+    compilerOptions { allWarningsAsErrors = true }
+}
 
 dependencies {
+    detektPlugins(libs.compose.rules.detekt)
     implementation(projects.shared)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)

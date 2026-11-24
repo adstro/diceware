@@ -1,7 +1,7 @@
 # The project writes American English (en-US). Run `codespell` from the repo root to check.
 [codespell]
 builtin = en-GB_to_en-US
-# Splits camelCase so identifiers like setCapitalise are checked word by word.
-regex = [A-Z]?[a-z'’]+
+# Splits camelCase and ALL_CAPS so identifiers like setCapitalise and MAX_COLOUR are checked word by word.
+regex = [A-Z]?[a-z'’]+|[A-Z]{2,}(?![a-z])
 # The EFF Word Lists are third-party data whose Words must match the published lists exactly.
-skip = ./.git,./wordlists,./androidApp/src/main/assets,./build,*/build,./.gradle,./.kotlin,*.png,*.jar,*.pbxproj
+skip = ./wordlists,*/build

@@ -121,7 +121,7 @@
     "Not imported: no line has the Roll %@." : {
 
     },
-    "Not imported: line %@ has no Roll." : {
+    "Not imported, line %@: there is no Roll." : {
 
     },
     "Not imported: line %@ is not UTF-8 text." : {
@@ -133,16 +133,16 @@
     "Not imported: line %@, “%@”, repeats the Word on line %@ (ignoring case)." : {
 
     },
-    "Not imported: the Roll on line %@ has a different number of dice from line 1." : {
+    "Not imported, line %@: the Roll has a different number of dice from line 1." : {
 
     },
-    "Not imported: the Roll on line %@ must be digits 1 to 6." : {
+    "Not imported, line %@: the Roll must be digits 1 to 6." : {
 
     },
-    "Not imported: the Roll on line %@ repeats the Roll on line %@." : {
+    "Not imported, line %@: the Roll repeats the Roll on line %@." : {
 
     },
-    "Not imported: the Word on line %@ contains a space." : {
+    "Not imported, line %@: the Word contains a space." : {
 
     },
     "Not imported: the file could not be read." : {

@@ -14,7 +14,7 @@ struct AboutView: View {
         (
             "Privacy",
             "Diceware keeps no history of your passphrases, writes no logs and has no analytics. The only time it uses the network is when you ask it to check eff.org for updated EFF Word Lists."
-        ),
+        )
     ]
 
     var body: some View {
