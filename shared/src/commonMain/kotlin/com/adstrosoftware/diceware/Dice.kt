@@ -5,7 +5,7 @@ fun interface RandomBytes {
     fun fill(bytes: ByteArray)
 }
 
-class RandomnessUnavailableException(message: String) : Exception(message)
+class RandomnessUnavailableException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /** The operating system's secure random generator. */
 expect fun secureRandomBytes(): RandomBytes

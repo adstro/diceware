@@ -63,77 +63,114 @@ internal suspend fun stageWordList(
     val byRoll = ExternalSorter(fileSystem, directory / "by-roll")
     val output = WordListWriter(fileSystem, directory)
     try {
-        var diceware: Boolean? = null
-        var firstLine = 0L
-        var rollLength = 0
-        var line = 0L
-        var count = 0L
-        var bytesRead = 0L
-        while (true) {
-            val text = source.readLineBounded(line + 1) ?: break
-            line++
-            bytesRead += text.utf8Size() + 1
-            if (line % YIELD_EVERY == 0L) {
-                yield()
-                if (sizeBytes > 0) progress(0.5 * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
-            }
-            // Malformed UTF-8 decodes to U+FFFD; importing it would silently change the Word.
-            if ('\uFFFD' in text) reject(ImportError.NotText(line))
-            val trimmed = (if (line == 1L) text.removePrefix("\uFEFF") else text).trim()
-            if (trimmed.isEmpty()) continue
-            val fields = trimmed.fields()
-            if (diceware == null) firstLine = line
-            val isDiceware = diceware ?: (fields.size >= 2 && fields[0].all { it.isDigit() }).also { diceware = it }
-            val word: String
-            if (isDiceware) {
-                if (fields.size == 1) reject(ImportError.MissingRoll(line))
-                if (fields.size > 2) reject(ImportError.WordHasWhitespace(line))
-                val roll = fields[0]
-                if (!isRoll(roll)) reject(ImportError.InvalidRoll(line))
-                if (rollLength == 0) rollLength = roll.length
-                if (roll.length != rollLength) reject(ImportError.MixedRollLength(line))
-                word = fields[1]
-                byRoll.add(Record(roll, line, word))
-            } else {
-                // A Roll on this line but not on the first: the first line is the one missing its Roll.
-                if (fields.size == 2 && fields[0].all { it.isDigit() }) reject(ImportError.MissingRoll(firstLine))
-                if (fields.size > 1) reject(ImportError.WordHasWhitespace(line))
-                word = fields[0]
-                output.write(word)
-            }
-            byWord.add(Record(word.lowercase(), line, word))
-            count++
-        }
-
-        val dicePerRoll: Int
-        if (diceware == true) {
-            if (rollLength < 4) reject(ImportError.WrongWordCount(count))
-            // Records come in Roll order, so the first one that isn't the next Roll shows which Roll is missing.
-            val expected = rollsInOrder(rollLength).map { it.joinToString("") }.iterator()
-            var previous: Record? = null
-            byRoll.forEachSorted(count, { progress(0.5 + 0.25 * it) }) { record ->
-                previous?.let { if (it.key == record.key) reject(ImportError.RepeatedRoll(record.line, it.line)) }
-                val roll = expected.next()
-                if (record.key != roll) reject(ImportError.RollNotFound(roll))
-                output.write(record.word)
-                previous = record
-            }
-            if (expected.hasNext()) reject(ImportError.RollNotFound(expected.next()))
-            dicePerRoll = rollLength
+        val lines = LineChecker(byWord, byRoll, output)
+        source.forEachLine(sizeBytes, progress, lines::add)
+        val dicePerRoll = if (lines.isDiceware) {
+            writeInRollOrder(byRoll, lines.rollLength, lines.count, output, progress)
         } else {
-            dicePerRoll = exactLog6(count)?.takeIf { it >= 4 } ?: reject(ImportError.WrongWordCount(count))
+            exactLog6(lines.count)?.takeIf { it >= 4 } ?: reject(ImportError.WrongWordCount(lines.count))
         }
-
-        var previous: Record? = null
-        byWord.forEachSorted(count, { progress(0.75 + 0.25 * it) }) { record ->
-            previous?.let { if (it.key == record.key) reject(ImportError.DuplicateWord(record.line, record.word, it.line)) }
-            previous = record
-        }
+        checkNoDuplicateWords(byWord, lines.count, progress)
         return StagedWordList(dicePerRoll, output.finish())
     } finally {
         output.close()
         byWord.close()
         byRoll.close()
+    }
+}
+
+/** Calls [each] with the number and trimmed text of every non-blank line; reading is the first half of [progress]. */
+private suspend fun BufferedSource.forEachLine(sizeBytes: Long, progress: (Double) -> Unit, each: (Long, String) -> Unit) {
+    var line = 0L
+    var bytesRead = 0L
+    while (true) {
+        val text = readLineBounded(line + 1) ?: return
+        line++
+        bytesRead += text.utf8Size() + 1
+        if (line % YIELD_EVERY == 0L) {
+            yield()
+            if (sizeBytes > 0) progress(0.5 * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
+        }
+        // Malformed UTF-8 decodes to U+FFFD; importing it would silently change the Word.
+        if ('\uFFFD' in text) reject(ImportError.NotText(line))
+        val trimmed = (if (line == 1L) text.removePrefix("\uFEFF") else text).trim()
+        if (trimmed.isNotEmpty()) each(line, trimmed)
+    }
+}
+
+/** Checks each line's fields; the first line decides whether the file is in Diceware format (Roll, then Word). */
+private class LineChecker(
+    private val byWord: ExternalSorter,
+    private val byRoll: ExternalSorter,
+    private val output: WordListWriter,
+) {
+    private var diceware: Boolean? = null
+    private var firstLine = 0L
+    val isDiceware get() = diceware == true
+    var rollLength = 0
+        private set
+    var count = 0L
+        private set
+
+    fun add(line: Long, text: String) {
+        val fields = text.fields()
+        val isDiceware = diceware ?: (fields.size >= 2 && fields[0].all { it.isDigit() }).also {
+            diceware = it
+            firstLine = line
+        }
+        val word = if (isDiceware) dicewareWord(line, fields) else plainWord(line, fields)
+        byWord.add(Record(word.lowercase(), line, word))
+        count++
+    }
+
+    private fun dicewareWord(line: Long, fields: List<String>): String {
+        if (fields.size == 1) reject(ImportError.MissingRoll(line))
+        if (fields.size > 2) reject(ImportError.WordHasWhitespace(line))
+        val roll = fields[0]
+        if (!isRoll(roll)) reject(ImportError.InvalidRoll(line))
+        if (rollLength == 0) rollLength = roll.length
+        if (roll.length != rollLength) reject(ImportError.MixedRollLength(line))
+        byRoll.add(Record(roll, line, fields[1]))
+        return fields[1]
+    }
+
+    private fun plainWord(line: Long, fields: List<String>): String {
+        // A Roll on this line but not on the first: the first line is the one missing its Roll.
+        if (fields.size == 2 && fields[0].all { it.isDigit() }) reject(ImportError.MissingRoll(firstLine))
+        if (fields.size > 1) reject(ImportError.WordHasWhitespace(line))
+        output.write(fields[0])
+        return fields[0]
+    }
+}
+
+/** Writes the Words of a Diceware-format file in Roll order, checking that every Roll appears exactly once. */
+private suspend fun writeInRollOrder(
+    byRoll: ExternalSorter,
+    rollLength: Int,
+    count: Long,
+    output: WordListWriter,
+    progress: (Double) -> Unit,
+): Int {
+    if (rollLength < 4) reject(ImportError.WrongWordCount(count))
+    // Records come in Roll order, so the first one that isn't the next Roll shows which Roll is missing.
+    val expected = rollsInOrder(rollLength).map { it.joinToString("") }.iterator()
+    var previous: Record? = null
+    byRoll.forEachSorted(count, { progress(0.5 + 0.25 * it) }) { record ->
+        previous?.let { if (it.key == record.key) reject(ImportError.RepeatedRoll(record.line, it.line)) }
+        val roll = expected.next()
+        if (record.key != roll) reject(ImportError.RollNotFound(roll))
+        output.write(record.word)
+        previous = record
+    }
+    if (expected.hasNext()) reject(ImportError.RollNotFound(expected.next()))
+    return rollLength
+}
+
+private suspend fun checkNoDuplicateWords(byWord: ExternalSorter, count: Long, progress: (Double) -> Unit) {
+    var previous: Record? = null
+    byWord.forEachSorted(count, { progress(0.75 + 0.25 * it) }) { record ->
+        previous?.let { if (it.key == record.key) reject(ImportError.DuplicateWord(record.line, record.word, it.line)) }
+        previous = record
     }
 }
 
@@ -209,12 +246,16 @@ private class ExternalSorter(private val fileSystem: FileSystem, private val dir
         while (true) {
             // shortcut: a linear scan of the run heads, fine to ~6⁹ Words (~300 runs); use a heap for bigger lists.
             var min = -1
+            var minHead: Record? = null
             for (i in heads.indices) {
                 val head = heads[i] ?: continue
-                if (min < 0 || recordOrder.compare(head, heads[min]!!) < 0) min = i
+                if (minHead == null || recordOrder.compare(head, minHead) < 0) {
+                    min = i
+                    minHead = head
+                }
             }
-            if (min < 0) break
-            each(heads[min]!!)
+            if (minHead == null) break
+            each(minHead)
             heads[min] = open[min].readRecord()
             if (++done % YIELD_EVERY == 0L) {
                 yield()

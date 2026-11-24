@@ -79,6 +79,8 @@ internal fun httpClient(engine: HttpClientEngine) = HttpClient(engine) { followR
 internal suspend fun HttpClient.download(url: String): Buffer {
     var current = Url(url)
     repeat(MAX_REDIRECTS + 1) {
+        // Each engine throws its own types for network failures, and every one of them means Offline.
+        @Suppress("TooGenericExceptionCaught")
         val body = try {
             prepareGet(current).execute { response ->
                 when {

@@ -63,20 +63,20 @@ class EffUpdateTest {
             ),
             library.effUpdateState.value,
         )
-        val shortOne = library.wordList(EffWordList.SHORT_1)!!
+        val shortOne = library.wordList(EffWordList.SHORT_1)
         assertEquals("short_11112", shortOne.resolve(listOf(1, 1, 1, 2)))
 
         library.applyEffUpdate()
 
         library.effUpdateState.first { it == EffUpdateState.Updated }
-        val updated = library.wordList(EffWordList.SHORT_1)!!
+        val updated = library.wordList(EffWordList.SHORT_1)
         assertEquals("kiwi", updated.resolve(listOf(1, 1, 1, 2)))
         assertEquals("short_16666", updated.resolve(listOf(1, 1, 1, 1)))
         assertEquals(listOf(false, true, false), library.loaded().map { it.updated })
         // Still updated in the next session; then a check finds it up to date.
         val next = library()
         assertEquals(listOf(false, true, false), next.loaded().map { it.updated })
-        assertEquals("kiwi", next.wordList(EffWordList.SHORT_1)!!.resolve(listOf(1, 1, 1, 2)))
+        assertEquals("kiwi", next.wordList(EffWordList.SHORT_1).resolve(listOf(1, 1, 1, 2)))
         next.checkForEffUpdates()
         assertEquals(EffUpdateState.UpToDate, next.effUpdateState.value)
     }
@@ -92,7 +92,7 @@ class EffUpdateTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(EffUpdateState.Idle, library.effUpdateState.value)
-        assertEquals("large1111", library.wordList(EffWordList.LARGE)!!.resolve(listOf(1, 1, 1, 1)))
+        assertEquals("large1111", library.wordList(EffWordList.LARGE).resolve(listOf(1, 1, 1, 1)))
         assertEquals(listOf(false, false, false), library().loaded().map { it.updated })
     }
 
@@ -107,11 +107,11 @@ class EffUpdateTest {
         library.restoreBundledEffWordLists()
 
         library.wordLists.first { lists -> lists.none { it.updated } }
-        assertEquals("large1111", library.wordList(EffWordList.LARGE)!!.resolve(listOf(1, 1, 1, 1)))
+        assertEquals("large1111", library.wordList(EffWordList.LARGE).resolve(listOf(1, 1, 1, 1)))
         assertEquals(listOf("/lists/index.json".toPath()), fileSystem.list("/lists".toPath()))
         val next = library()
         assertEquals(listOf(false, false, false), next.loaded().map { it.updated })
-        assertEquals("large1111", next.wordList(EffWordList.LARGE)!!.resolve(listOf(1, 1, 1, 1)))
+        assertEquals("large1111", next.wordList(EffWordList.LARGE).resolve(listOf(1, 1, 1, 1)))
     }
 
     @Test
@@ -174,7 +174,7 @@ class EffUpdateTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(EffUpdateState.Failed(expected), library.effUpdateState.value)
-        assertEquals("large1111", library.wordList(EffWordList.LARGE)!!.resolve(listOf(1, 1, 1, 1)))
+        assertEquals("large1111", library.wordList(EffWordList.LARGE).resolve(listOf(1, 1, 1, 1)))
         assertEquals(emptyList(), fileSystem.list("/lists".toPath()))
     }
 

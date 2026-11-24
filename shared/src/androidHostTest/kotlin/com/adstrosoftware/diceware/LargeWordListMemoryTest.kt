@@ -78,5 +78,5 @@ private class Lines(private val count: Int) : Source {
 
     override fun timeout() = Timeout.NONE
 
-    override fun close() {}
+    override fun close() = Unit
 }

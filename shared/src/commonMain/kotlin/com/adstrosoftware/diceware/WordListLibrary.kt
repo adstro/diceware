@@ -44,6 +44,8 @@ private const val MAX_NAME_LENGTH = 100
  * Every Word List: the bundled EFF Word Lists plus Custom Word Lists imported into [directory], which the apps
  * keep app-private and out of cloud backup. Disk work runs on [ioContext], never the caller's thread.
  */
+// One public function per Word Lists action: this class is the core's API for them, by design (the spec's single test seam).
+@Suppress("TooManyFunctions")
 class WordListLibrary(
     private val bundled: () -> Map<EffWordList, WordList>,
     private val fileSystem: FileSystem,
@@ -53,7 +55,7 @@ class WordListLibrary(
     httpEngine: () -> HttpClientEngine = ::platformHttpEngine,
 ) {
     private val index = WordListIndex(fileSystem, directory)
-    private val eff = EffWordLists(index, fileSystem, directory, scope, ioContext, httpEngine, ::awaitLoaded, ::publish)
+    private val eff = EffWordLists(index, scope, ioContext, httpEngine, ::awaitLoaded, ::publish)
     private val custom = MutableStateFlow<Map<CustomWordListId, DiskWordList>>(emptyMap())
     private val loaded = CompletableDeferred<Unit>()
     private var importJob: Job? = null
@@ -89,6 +91,9 @@ class WordListLibrary(
         is CustomWordListId -> custom.value[id]
     }
 
+    /** An EFF Word List is always there: a bundled one stands in for any copy not yet updated from eff.org. */
+    internal fun wordList(id: EffWordList): WordList = eff.inUse(id)
+
     /**
      * Imports a Custom Word List named after [fileName] from the untrusted [open]ed source of [sizeBytes]
      * (≤ 0 if unknown), updating [importState]; returns once it is imported, rejected or canceled.
@@ -103,23 +108,12 @@ class WordListLibrary(
                 awaitLoaded()
                 fileSystem.deleteRecursively(staging)
                 fileSystem.createDirectories(staging)
-                val input = try {
-                    open()
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    throw WordListRejected(ImportError.Unreadable)
-                }
-                val staged = UnreadableSource(input).buffer().use { source ->
+                val staged = UnreadableSource(openOrReject(open)).buffer().use { source ->
                     stageWordList(source, sizeBytes, fileSystem, staging) { mutableImportState.value = ImportState.Importing(it) }
                 }
                 val name = nameOf(fileName)
                 index.lock.withLock {
-                    EffWordList.entries.firstOrNull { eff.sha256InUse(it) == staged.sha256 }?.let {
-                        throw WordListRejected(ImportError.AlreadyImportedAsEff(it))
-                    }
-                    customEntries().firstOrNull { it.sha256 == staged.sha256 }?.let {
-                        throw WordListRejected(ImportError.AlreadyImported(it.name))
-                    }
+                    duplicateOf(staged.sha256)?.let { throw WordListRejected(it) }
                     for (file in WORD_LIST_FILES) index.moveIn(staging / file, wordListFileName(staged.sha256, file))
                     val entry = IndexEntry.Custom(staged.sha256, name, staged.dicePerRoll)
                     index.save(index.entries.value + entry)
@@ -189,6 +183,10 @@ class WordListLibrary(
         changeIndex { list -> list.filterIsInstance<IndexEntry.Custom>() }
     }
 
+    private fun duplicateOf(sha256: String): ImportError? =
+        EffWordList.entries.firstOrNull { eff.sha256InUse(it) == sha256 }?.let(ImportError::AlreadyImportedAsEff)
+            ?: customEntries().firstOrNull { it.sha256 == sha256 }?.let { ImportError.AlreadyImported(it.name) }
+
     private fun customEntries() = index.entries.value.filterIsInstance<IndexEntry.Custom>()
 
     private fun changeIndex(change: (List<IndexEntry>) -> List<IndexEntry>) {
@@ -211,6 +209,16 @@ private fun nameOf(fileName: String): String {
     val base = fileName.substringAfterLast('/').trim()
     val name = (if ('.' in base.drop(1)) base.substringBeforeLast('.') else base).trim()
     return name.ifEmpty { base }.ifEmpty { "Word List" }.take(MAX_NAME_LENGTH)
+}
+
+/** Opens the file to import; the platform can fail in its own ways, and each means the file can't be read. */
+@Suppress("TooGenericExceptionCaught")
+private fun openOrReject(open: () -> Source): Source = try {
+    open()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    throw WordListRejected(ImportError.Unreadable)
 }
 
 /** Read failures of the imported file are the file's fault, not a lack of storage space. */

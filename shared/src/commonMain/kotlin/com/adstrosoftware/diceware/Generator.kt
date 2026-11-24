@@ -135,7 +135,7 @@ class Generator(
 
     // A list deleted a moment ago is replaced by EFF Large as soon as the deletion is seen.
     private fun selectedWordList(options: PassphraseOptions): WordList =
-        library.wordList(options.wordList) ?: library.wordList(EffWordList.LARGE)!!
+        library.wordList(options.wordList) ?: library.wordList(EffWordList.LARGE)
 
     /** Builds from the dice entered so far; whatever they don't cover yet is what entry asks for next. */
     private fun showEntered() {
