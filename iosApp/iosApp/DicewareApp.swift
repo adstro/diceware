@@ -43,8 +43,14 @@ struct DicewareApp: App {
             // @Sendable: the core calls this off the main thread, so it must not inherit main-actor isolation.
             readBundled: { @Sendable wordList in
                 // The lists ship inside the app bundle, so a missing or unreadable file is a build error.
-                let url = Bundle.main.url(forResource: wordList.fileName, withExtension: nil)!
-                return try! String(contentsOf: url, encoding: .utf8)
+                guard let url = Bundle.main.url(forResource: wordList.fileName, withExtension: nil) else {
+                    fatalError("\(wordList.fileName) is missing from the app bundle")
+                }
+                do {
+                    return try String(contentsOf: url, encoding: .utf8)
+                } catch {
+                    fatalError("Couldn't read bundled \(wordList.fileName): \(error)")
+                }
             },
             settingsPath: settingsPath,
             wordListsPath: wordListsPath
@@ -63,15 +69,23 @@ struct DicewareApp: App {
     static func excludedFromBackup(_ directory: URL) -> URL {
         var directory = directory
         // The app's own container is always writable; failing here means a broken install.
-        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        try! directory.setResourceValues(values)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try directory.setResourceValues(values)
+        } catch {
+            fatalError("Couldn't create \(directory.lastPathComponent) excluded from backup: \(error)")
+        }
         return directory
     }
 
     private static var applicationSupport: URL {
         // The app's own container always has Application Support; failing to create it means a broken install.
-        try! FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        do {
+            return try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        } catch {
+            fatalError("Couldn't open Application Support: \(error)")
+        }
     }
 }
