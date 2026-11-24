@@ -29,6 +29,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.movableContentOf
@@ -128,6 +129,7 @@ fun GeneratorScreen(
 
 /** Whether the window is in the expanded width size class (840dp and wider): tablets, unfolded foldables, desktop. */
 @Composable
+@ReadOnlyComposable
 private fun isWidthExpanded(): Boolean {
     val size = LocalWindowInfo.current.containerDpSize
     return WindowSizeClass.BREAKPOINTS_V1.computeWindowSizeClass(size.width.value, size.height.value)

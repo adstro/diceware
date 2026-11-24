@@ -83,19 +83,7 @@ fun DiceEntryScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace),
                     modifier = Modifier.semantics { contentDescription = entered },
                 )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    maxItemsInEachRow = 3,
-                ) {
-                    for (face in 1..6) {
-                        val label = stringResource(R.string.die_face, face)
-                        FilledTonalButton(
-                            onClick = { onDie(face) },
-                            modifier = Modifier.sizeIn(minWidth = 64.dp, minHeight = 64.dp).semantics { contentDescription = label },
-                        ) { Text(face.toString(), style = MaterialTheme.typography.headlineSmall) }
-                    }
-                }
+                DieFaces(onDie)
             }
             OutlinedButton(onClick = onRemoveLastDie, enabled = entry.words.isNotEmpty() || entry.roll.isNotEmpty()) {
                 Text(stringResource(R.string.remove_last_die))
@@ -105,6 +93,25 @@ fun DiceEntryScreen(
             entry.words.forEach {
                 Text(it, style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace), modifier = readable)
             }
+        }
+    }
+}
+
+/** One button per die face, in two rows of three. */
+@Composable
+private fun DieFaces(onDie: (Int) -> Unit, modifier: Modifier = Modifier) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = 3,
+    ) {
+        for (face in 1..6) {
+            val label = stringResource(R.string.die_face, face)
+            FilledTonalButton(
+                onClick = { onDie(face) },
+                modifier = Modifier.sizeIn(minWidth = 64.dp, minHeight = 64.dp).semantics { contentDescription = label },
+            ) { Text(face.toString(), style = MaterialTheme.typography.headlineSmall) }
         }
     }
 }

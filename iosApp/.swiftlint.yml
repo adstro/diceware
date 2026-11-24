@@ -5,7 +5,6 @@ included:
 # Formatting-only rules: they flag style, not bugs.
 disabled_rules:
   - line_length
-  - trailing_comma
 opt_in_rules:
   - accessibility_label_for_image
   - accessibility_trait_for_button

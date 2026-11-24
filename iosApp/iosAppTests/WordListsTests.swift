@@ -36,7 +36,7 @@ struct WordListsTests {
         #expect(rows == [
             "EFF Large: 7,776 Words · 12.9 bits per Word",
             "EFF Short #1: 1,296 Words · 10.3 bits per Word",
-            "EFF Short #2: 1,296 Words · 10.3 bits per Word",
+            "EFF Short #2: 1,296 Words · 10.3 bits per Word"
         ])
     }
 
@@ -65,7 +65,7 @@ struct WordListsTests {
         await DicewareApp.importFile(at: file, into: generator.library)
 
         let failed = try #require(generator.library.importState.value as? ImportStateFailed)
-        #expect(WordListsView.message(for: failed.error) == "Not imported: the Word on line 8 contains a space.")
+        #expect(WordListsView.message(for: failed.error) == "Not imported, line 8: the Word contains a space.")
     }
 
     @Test func anEffUpdateIsSummarizedAsWordsAddedAndRemovedWithASample() {
@@ -77,7 +77,7 @@ struct WordListsTests {
         #expect(WordListsView.summary(of: change) == [
             "EFF Short #1: 7 Words added, 2 removed",
             "Added: kiwi, lime, fig, date, plum, …",
-            "Removed: acid, zoom",
+            "Removed: acid, zoom"
         ])
     }
 
@@ -91,7 +91,7 @@ struct WordListsTests {
         #expect(WordListsView.message(for: EffUpdateErrorRedirected.shared)
             == "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
         #expect(WordListsView.message(for: EffUpdateErrorInvalid(wordList: .short2, error: ImportErrorWordHasWhitespace(line: 8)))
-            == "EFF Short #2 from eff.org is not a valid Word List. Not imported: the Word on line 8 contains a space. Nothing was changed.")
+            == "EFF Short #2 from eff.org is not a valid Word List. Not imported, line 8: the Word contains a space. Nothing was changed.")
     }
 
     @Test func importingAnEffWordListOrSkippingARollSaysSo() {

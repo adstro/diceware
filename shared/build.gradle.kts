@@ -17,6 +17,8 @@ dependencies { detektPlugins(libs.compose.rules.detekt) }
 
 kotlin {
     jvmToolchain(21)
+    // Kotlin compiler warnings fail the build, as Swift ones do on iOS.
+    compilerOptions { allWarningsAsErrors = true }
     android {
         namespace = "com.adstrosoftware.diceware.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()

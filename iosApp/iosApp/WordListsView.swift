@@ -194,17 +194,17 @@ struct WordListsView: View {
         case .duplicateWord(let detail):
             String(localized: "Not imported: line \(detail.line.formatted()), “\(detail.word)”, repeats the Word on line \(detail.firstLine.formatted()) (ignoring case).")
         case .wordHasWhitespace(let detail):
-            String(localized: "Not imported: the Word on line \(detail.line.formatted()) contains a space.")
+            String(localized: "Not imported, line \(detail.line.formatted()): the Word contains a space.")
         case .invalidRoll(let detail):
-            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) must be digits 1 to 6.")
+            String(localized: "Not imported, line \(detail.line.formatted()): the Roll must be digits 1 to 6.")
         case .mixedRollLength(let detail):
-            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) has a different number of dice from line 1.")
+            String(localized: "Not imported, line \(detail.line.formatted()): the Roll has a different number of dice from line 1.")
         case .missingRoll(let detail):
-            String(localized: "Not imported: line \(detail.line.formatted()) has no Roll.")
+            String(localized: "Not imported, line \(detail.line.formatted()): there is no Roll.")
         case .rollNotFound(let detail):
             String(localized: "Not imported: no line has the Roll \(detail.roll).")
         case .repeatedRoll(let detail):
-            String(localized: "Not imported: the Roll on line \(detail.line.formatted()) repeats the Roll on line \(detail.firstLine.formatted()).")
+            String(localized: "Not imported, line \(detail.line.formatted()): the Roll repeats the Roll on line \(detail.firstLine.formatted()).")
         case .lineTooLong(let detail):
             String(localized: "Not imported: line \(detail.line.formatted()) is too long to be a Word.")
         case .notText(let detail):

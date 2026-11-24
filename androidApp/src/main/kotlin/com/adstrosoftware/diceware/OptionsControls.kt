@@ -12,9 +12,11 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -71,11 +73,12 @@ fun OptionsControls(
         val wordCountLabel = stringResource(R.string.word_count, options.wordCount)
         Text(wordCountLabel, style = MaterialTheme.typography.titleMedium)
         val range = PassphraseOptions.WORD_COUNTS
+        val sliderState = rememberSliderState(options.wordCount.toFloat(), range.last - range.first - 1, range.first.toFloat()..range.last.toFloat())
+        // The core owns the Word count: the slider shows it and forwards each change.
+        SideEffect { sliderState.value = options.wordCount.toFloat() }
         Slider(
-            value = options.wordCount.toFloat(),
+            state = sliderState,
             onValueChange = { onWordCount(it.roundToInt()) },
-            valueRange = range.first.toFloat()..range.last.toFloat(),
-            steps = range.last - range.first - 1,
             modifier = Modifier.testTag(WORD_COUNT_TAG).semantics { contentDescription = wordCountLabel },
         )
 
