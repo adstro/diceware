@@ -85,7 +85,8 @@ internal suspend fun HttpClient.download(url: String): Buffer {
             prepareGet(current).execute { response ->
                 when {
                     response.status.value in 300..399 -> {
-                        val next = URLBuilder(current).takeFrom(response.headers[HttpHeaders.Location] ?: fail(EffUpdateError.Redirected)).build()
+                        val location = response.headers[HttpHeaders.Location] ?: fail(EffUpdateError.Redirected)
+                        val next = runCatching { URLBuilder(current).takeFrom(location).build() }.getOrNull() ?: fail(EffUpdateError.Redirected)
                         if (next.protocol != URLProtocol.HTTPS || next.host != current.host) fail(EffUpdateError.Redirected)
                         current = next
                         null
