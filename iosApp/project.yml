@@ -1,6 +1,7 @@
 name: iosApp
 options:
   bundleIdPrefix: com.adstro
+  developmentLanguage: en-US
   deploymentTarget:
     iOS: "17.0"
 settings:

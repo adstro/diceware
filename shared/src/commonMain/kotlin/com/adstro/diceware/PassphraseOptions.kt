@@ -21,7 +21,7 @@ enum class Mode { RANDOM, DICE }
 data class PassphraseOptions(
     val wordCount: Int = 6,
     val separator: Separator = Separator.SPACE,
-    val capitalise: Boolean = false,
+    val capitalize: Boolean = false,
     val appendDigit: Boolean = false,
     val appendSymbol: Boolean = false,
     val wordList: WordListId = EffWordList.LARGE,
@@ -34,7 +34,7 @@ data class PassphraseOptions(
 
 private val wordCountKey = intPreferencesKey("word_count")
 private val separatorKey = stringPreferencesKey("separator")
-private val capitaliseKey = booleanPreferencesKey("capitalise")
+private val capitalizeKey = booleanPreferencesKey("capitalize")
 private val appendDigitKey = booleanPreferencesKey("append_digit")
 private val appendSymbolKey = booleanPreferencesKey("append_symbol")
 private const val CUSTOM_PREFIX = "custom:"
@@ -47,7 +47,7 @@ internal fun Preferences.toOptions(): PassphraseOptions {
     return PassphraseOptions(
         wordCount = this[wordCountKey]?.coerceIn(PassphraseOptions.WORD_COUNTS) ?: defaults.wordCount,
         separator = Separator.entries.firstOrNull { it.name == this[separatorKey] } ?: defaults.separator,
-        capitalise = this[capitaliseKey] ?: defaults.capitalise,
+        capitalize = this[capitalizeKey] ?: defaults.capitalize,
         appendDigit = this[appendDigitKey] ?: defaults.appendDigit,
         appendSymbol = this[appendSymbolKey] ?: defaults.appendSymbol,
         wordList = this[wordListKey]?.let { saved ->
@@ -61,7 +61,7 @@ internal fun Preferences.toOptions(): PassphraseOptions {
 internal fun PassphraseOptions.writeTo(preferences: androidx.datastore.preferences.core.MutablePreferences) {
     preferences[wordCountKey] = wordCount
     preferences[separatorKey] = separator.name
-    preferences[capitaliseKey] = capitalise
+    preferences[capitalizeKey] = capitalize
     preferences[appendDigitKey] = appendDigit
     preferences[appendSymbolKey] = appendSymbol
     preferences[wordListKey] = when (val id = wordList) {

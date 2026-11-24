@@ -91,7 +91,7 @@ class WordListLibrary(
 
     /**
      * Imports a Custom Word List named after [fileName] from the untrusted [open]ed source of [sizeBytes]
-     * (≤ 0 if unknown), updating [importState]; returns once it is imported, rejected or cancelled.
+     * (≤ 0 if unknown), updating [importState]; returns once it is imported, rejected or canceled.
      * Ignored while another import is running.
      */
     suspend fun import(fileName: String, sizeBytes: Long, open: () -> Source) {

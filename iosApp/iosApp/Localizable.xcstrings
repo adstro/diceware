@@ -1,5 +1,5 @@
 {
-  "sourceLanguage" : "en",
+  "sourceLanguage" : "en-US",
   "strings" : {
     "%@ Words · %.1f bits per Word" : {
 
@@ -31,7 +31,7 @@
     "Cancel" : {
 
     },
-    "Capitalise each Word" : {
+    "Capitalize each Word" : {
 
     },
     "Check for updates" : {

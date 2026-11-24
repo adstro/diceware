@@ -81,7 +81,7 @@ class GeneratorTest {
 
         assertEquals(PassphraseOptions(), generator.options.value)
         assertEquals(
-            PassphraseOptions(6, Separator.SPACE, capitalise = false, appendDigit = false, appendSymbol = false, wordList = EffWordList.LARGE),
+            PassphraseOptions(6, Separator.SPACE, capitalize = false, appendDigit = false, appendSymbol = false, wordList = EffWordList.LARGE),
             generator.options.value,
         )
     }
@@ -133,11 +133,11 @@ class GeneratorTest {
     }
 
     @Test
-    fun capitalisingUppercasesTheFirstLetterOfEveryWordAndAddsNoStrength() = runTest {
+    fun capitalizingUppercasesTheFirstLetterOfEveryWordAndAddsNoStrength() = runTest {
         val generator = generator(ScriptedRandom(*ones(48)))
         val before = generator.ready().strengthBits
 
-        generator.setCapitalise(true)
+        generator.setCapitalize(true)
 
         val ready = generator.ready()
         assertEquals(List(6) { "W1111" }.joinToString(" "), ready.passphrase)
@@ -162,7 +162,7 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(24), *ones(24), *diceBytes(1, 2, 3, 4, 6, 6, 6, 6, *IntArray(16) { 1 }, 4, 3)))
         generator.ready()
 
-        generator.setCapitalise(true)
+        generator.setCapitalize(true)
         generator.setAppendDigit(true)
 
         val ready = generator.ready()
@@ -247,7 +247,7 @@ class GeneratorTest {
         first.ready()
         first.setWordCount(3)
         first.setSeparator(Separator.HYPHEN)
-        first.setCapitalise(true)
+        first.setCapitalize(true)
         first.setAppendDigit(true)
         first.setAppendSymbol(true)
         testScheduler.advanceUntilIdle()
@@ -482,7 +482,7 @@ class GeneratorTest {
         val changes = listOf<Generator.() -> Unit>(
             { setWordCount(3) },
             { setSeparator(Separator.HYPHEN) },
-            { setCapitalise(true) },
+            { setCapitalize(true) },
             { setAppendDigit(true) },
             { setAppendSymbol(true) },
             { setWordList(EffWordList.SHORT_1) },

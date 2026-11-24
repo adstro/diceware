@@ -189,8 +189,8 @@ struct OptionsControls: View {
                 }
             }
             Toggle(
-                "Capitalise each Word",
-                isOn: Binding(get: { options.capitalise }, set: { generator.setCapitalise(on: $0) })
+                "Capitalize each Word",
+                isOn: Binding(get: { options.capitalize }, set: { generator.setCapitalize(on: $0) })
             )
             Toggle(
                 "Add a digit",

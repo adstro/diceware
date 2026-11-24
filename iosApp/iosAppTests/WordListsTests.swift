@@ -68,7 +68,7 @@ struct WordListsTests {
         #expect(WordListsView.message(for: failed.error) == "Not imported: the Word on line 8 contains a space.")
     }
 
-    @Test func anEffUpdateIsSummarisedAsWordsAddedAndRemovedWithASample() {
+    @Test func anEffUpdateIsSummarizedAsWordsAddedAndRemovedWithASample() {
         let change = EffWordListChange(
             wordList: .short1, wordsAdded: 7, wordsRemoved: 2,
             sampleAdded: ["kiwi", "lime", "fig", "date", "plum"], sampleRemoved: ["acid", "zoom"]

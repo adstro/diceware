@@ -7,6 +7,8 @@ plugins {
 
 android {
     namespace = "com.adstro.diceware"
+    // Declares the unqualified values/ strings as en-US (res/resources.properties) and lists it as the app's language.
+    androidResources { generateLocaleConfig = true }
     // Compose UI 1.13 needs compileSdk 37.1.
     compileSdk { version = release(37) { minorApiLevel = 1 } }
     defaultConfig {

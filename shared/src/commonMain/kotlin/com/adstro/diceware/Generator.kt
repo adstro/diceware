@@ -112,7 +112,7 @@ class Generator(
 
     fun setWordCount(count: Int) = update { it.copy(wordCount = count.coerceIn(PassphraseOptions.WORD_COUNTS)) }
     fun setSeparator(separator: Separator) = update { it.copy(separator = separator) }
-    fun setCapitalise(on: Boolean) = update { it.copy(capitalise = on) }
+    fun setCapitalize(on: Boolean) = update { it.copy(capitalize = on) }
     fun setAppendDigit(on: Boolean) = update { it.copy(appendDigit = on) }
     fun setAppendSymbol(on: Boolean) = update { it.copy(appendSymbol = on) }
     fun setWordList(wordList: WordListId) = update { it.copy(wordList = wordList) }
