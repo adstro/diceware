@@ -34,8 +34,6 @@ Compose:
     active: true
   ComposableNaming:
     active: true
-  ComposableNestingDepth:
-    active: false # Opt-in, disabled by default. Turn on if you want to enforce a maximum nesting depth in your composables.
   ComposableParamOrder:
     active: true
   CompositionLocalAllowlist:
@@ -58,8 +56,6 @@ Compose:
     active: true
   LambdaParameterInRestartableEffect:
     active: true
-  Material2:
-    active: false # Opt-in, disabled by default. Turn on if you want to disallow Material 2 usages.
   MissingNonRestartableComposable:
     active: true
   MissingReadOnlyComposable:
@@ -92,8 +88,6 @@ Compose:
     active: true
   PreviewAnnotationNaming:
     active: true
-  PreviewNaming:
-    active: false # Opt-in, disabled by default.
   PreviewPublic:
     active: true
   RememberContentMissing:
@@ -108,8 +102,6 @@ Compose:
     active: true
   UnnecessaryLaunchedEffect:
     active: true
-  UnstableCollections:
-    active: false # Opt-in, disabled by default. Turn on if you want to enforce this (e.g. you have strong skipping disabled)
   VarsWithoutStateBacking:
     active: true
   ViewModelForwarding:
