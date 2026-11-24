@@ -2,6 +2,7 @@ package com.adstrosoftware.diceware
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,34 +36,37 @@ import androidx.compose.ui.unit.dp
 
 /** The top app bar's overflow menu; the way to reach the app's secondary screens. */
 @Composable
-fun OverflowMenu(onWordLists: () -> Unit, onAbout: () -> Unit) {
+fun OverflowMenu(onWordLists: () -> Unit, onAbout: () -> Unit, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    IconButton(onClick = { expanded = true }) {
-        Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.more_options))
-    }
-    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.word_lists)) },
-            onClick = {
-                expanded = false
-                onWordLists()
-            },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.about)) },
-            onClick = {
-                expanded = false
-                onAbout()
-            },
-        )
+    Box(modifier) {
+        IconButton(onClick = { expanded = true }) {
+            Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.more_options))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.word_lists)) },
+                onClick = {
+                    expanded = false
+                    onWordLists()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.about)) },
+                onClick = {
+                    expanded = false
+                    onAbout()
+                },
+            )
+        }
     }
 }
 
 /** Explains Diceware, credits the EFF Word Lists and states the privacy guarantees. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen(onNavigateUp: () -> Unit) {
+fun AboutScreen(onNavigateUp: () -> Unit, modifier: Modifier = Modifier) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.about)) },
@@ -98,12 +102,14 @@ fun AboutScreen(onNavigateUp: () -> Unit) {
 
 @Composable
 private fun Section(@StringRes title: Int, @StringRes body: Int) {
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(top = 16.dp).semantics { heading() },
-    )
-    Text(stringResource(body), style = MaterialTheme.typography.bodyLarge)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 16.dp).semantics { heading() },
+        )
+        Text(stringResource(body), style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 @Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)

@@ -215,7 +215,7 @@ class GeneratorScreenTest {
 
         rule.onNodeWithText(rule.activity.getString(R.string.enter_dice)).performScrollTo().performClick()
         // EFF Large: 5 dice per Roll. 11111 is "abacus", 66666 is "zoom".
-        rule.onNodeWithText(rule.activity.getString(R.string.dice_step_word, 1, 6, 5)).assertExists()
+        rule.onNodeWithText("Word 1 of 6: roll 5 dice").assertExists()
         repeat(5) { tapDie(1) }
         rule.onNodeWithText("abacus").assertExists()
         repeat(5) { tapDie(6) }

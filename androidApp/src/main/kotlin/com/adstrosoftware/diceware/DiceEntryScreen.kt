@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -39,8 +40,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DiceEntryScreen(
     entry: DiceEntryState, onDie: (Int) -> Unit, onRemoveLastDie: () -> Unit, onNavigateUp: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.enter_dice)) },
@@ -64,7 +67,7 @@ fun DiceEntryScreen(
         ) {
             val readable = Modifier.widthIn(max = 600.dp).fillMaxWidth()
             val prompt = when (entry.step) {
-                DiceStep.WORD -> stringResource(R.string.dice_step_word, entry.words.size + 1, entry.wordCount, entry.diceInRoll)
+                DiceStep.WORD -> pluralStringResource(R.plurals.dice_step_word, entry.diceInRoll, entry.words.size + 1, entry.wordCount, entry.diceInRoll)
                 DiceStep.DIGIT -> stringResource(R.string.dice_step_digit)
                 DiceStep.SYMBOL -> stringResource(R.string.dice_step_symbol)
                 DiceStep.DONE -> stringResource(R.string.dice_complete)

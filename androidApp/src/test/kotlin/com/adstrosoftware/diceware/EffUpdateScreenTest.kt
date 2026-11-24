@@ -38,7 +38,7 @@ class EffUpdateScreenTest {
                 onCheckForUpdates = { actions += "check" },
                 onApplyUpdate = { actions += "apply" },
                 onDismissUpdate = { actions += "dismiss" },
-                onRestoreBundled = { actions += "restore" },
+                onRestoreBundledWordLists = { actions += "restore" },
             )
         }
     }
