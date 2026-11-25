@@ -18,13 +18,20 @@ sealed interface GeneratorState {
     data class Ready(val passphrase: String, val strengthBits: Double, val words: List<String>) : GeneratorState {
         val isWeak: Boolean get() = strengthBits < WEAK_BELOW_BITS
 
-        /** The Passphrase as a screen reader announces it, one part at a time: each Word, then each appended character. */
+        /**
+         * The Passphrase as a screen reader announces it, one part at a time: each Word, then each appended
+         * character.
+         */
         val parts: List<PassphrasePart>
             get() {
                 val parts = mutableListOf<PassphrasePart>()
                 var start = 0
                 words.forEachIndexed { i, word ->
-                    val end = if (i < words.lastIndex) passphrase.indexOf(words[i + 1], start + word.length) else start + word.length
+                    val end = if (i < words.lastIndex) {
+                        passphrase.indexOf(words[i + 1], start + word.length)
+                    } else {
+                        start + word.length
+                    }
                     parts += PassphrasePart(passphrase.substring(start, end), word)
                     start = end
                 }
@@ -40,7 +47,10 @@ sealed interface GeneratorState {
     data object RandomnessUnavailable : GeneratorState
 }
 
-/** Part of a Passphrase: [shown] is a Word with the Separator after it (or a digit or symbol), [spoken] just the Word. */
+/**
+ * Part of a Passphrase: [shown] is a Word with the Separator after it (or a digit or symbol), [spoken] just the
+ * Word.
+ */
 data class PassphrasePart(val shown: String, val spoken: String)
 
 /** Strength below this many bits gets a warning. */
@@ -73,11 +83,12 @@ class Generator(
         scope.launch {
             library.awaitLoaded()
             val saved = settings.data.first().toOptions()
-            mutableOptions.value = if (library.wordList(saved.wordList) == null) saved.copy(wordList = EffWordList.LARGE) else saved
+            mutableOptions.value =
+                if (library.wordList(saved.wordList) == null) saved.copy(wordList = EffWordList.LARGE) else saved
             regenerate()
             // A deleted Selected Word List falls back to EFF Large.
             library.wordLists.collect { lists ->
-                if (lists.none { it.id == options.value.wordList }) setWordList(EffWordList.LARGE)
+                if (lists.none { it.id == options.value.wordList }) change(OptionChange.SetWordList(EffWordList.LARGE))
             }
         }
     }
@@ -100,7 +111,7 @@ class Generator(
 
     /** Dice Mode: adds one die face (1–6) to the current Roll; ignored once every Roll is entered. */
     fun enterDie(face: Int) {
-        if (face !in 1..6 || diceEntry.value.step == DiceStep.DONE) return
+        if (face !in 1..DIE_FACES || diceEntry.value.step == DiceStep.DONE) return
         enteredDice += face
         showEntered()
     }
@@ -110,16 +121,18 @@ class Generator(
         if (enteredDice.removeLastOrNull() != null) showEntered()
     }
 
-    fun setWordCount(count: Int) = update { it.copy(wordCount = count.coerceIn(PassphraseOptions.WORD_COUNTS)) }
-    fun setSeparator(separator: Separator) = update { it.copy(separator = separator) }
-    fun setCapitalize(on: Boolean) = update { it.copy(capitalize = on) }
-    fun setAppendDigit(on: Boolean) = update { it.copy(appendDigit = on) }
-    fun setAppendSymbol(on: Boolean) = update { it.copy(appendSymbol = on) }
-    fun setWordList(wordList: WordListId) = update { it.copy(wordList = wordList) }
-    fun setMode(mode: Mode) = update { it.copy(mode = mode) }
-
-    private fun update(change: (PassphraseOptions) -> PassphraseOptions) {
-        val options = change(options.value)
+    fun change(option: OptionChange) {
+        val options = with(options.value) {
+            when (option) {
+                is OptionChange.SetMode -> copy(mode = option.mode)
+                is OptionChange.SetWordList -> copy(wordList = option.wordList)
+                is OptionChange.SetWordCount -> copy(wordCount = option.count.coerceIn(PassphraseOptions.WORD_COUNTS))
+                is OptionChange.SetSeparator -> copy(separator = option.separator)
+                is OptionChange.SetCapitalize -> copy(capitalize = option.on)
+                is OptionChange.SetAppendDigit -> copy(appendDigit = option.on)
+                is OptionChange.SetAppendSymbol -> copy(appendSymbol = option.on)
+            }
+        }
         mutableOptions.value = options
         regenerate()
         scope.launch { settings.edit { options.writeTo(it) } }

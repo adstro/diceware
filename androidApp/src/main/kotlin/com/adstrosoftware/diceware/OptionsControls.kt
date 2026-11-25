@@ -42,20 +42,18 @@ private val separatorLabels = mapOf(
 fun OptionsControls(
     options: PassphraseOptions,
     wordLists: List<WordListInfo>,
-    onMode: (Mode) -> Unit,
-    onWordList: (WordListId) -> Unit,
-    onWordCount: (Int) -> Unit,
-    onSeparator: (Separator) -> Unit,
-    onCapitalize: (Boolean) -> Unit,
-    onAppendDigit: (Boolean) -> Unit,
-    onAppendSymbol: (Boolean) -> Unit,
+    onChange: (OptionChange) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.mode), style = MaterialTheme.typography.titleMedium)
         FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(Mode.RANDOM to R.string.mode_random, Mode.DICE to R.string.mode_dice).forEach { (mode, label) ->
-                FilterChip(selected = options.mode == mode, onClick = { onMode(mode) }, label = { Text(stringResource(label)) })
+                FilterChip(
+                    selected = options.mode == mode,
+                    onClick = { onChange(OptionChange.SetMode(mode)) },
+                    label = { Text(stringResource(label)) },
+                )
             }
         }
 
@@ -64,7 +62,7 @@ fun OptionsControls(
             wordLists.forEach { info ->
                 FilterChip(
                     selected = options.wordList == info.id,
-                    onClick = { onWordList(info.id) },
+                    onClick = { onChange(OptionChange.SetWordList(info.id)) },
                     label = { Text(nameOf(info)) },
                 )
             }
@@ -73,12 +71,16 @@ fun OptionsControls(
         val wordCountLabel = stringResource(R.string.word_count, options.wordCount)
         Text(wordCountLabel, style = MaterialTheme.typography.titleMedium)
         val range = PassphraseOptions.WORD_COUNTS
-        val sliderState = rememberSliderState(options.wordCount.toFloat(), range.last - range.first - 1, range.first.toFloat()..range.last.toFloat())
+        val sliderState = rememberSliderState(
+            options.wordCount.toFloat(),
+            range.last - range.first - 1,
+            range.first.toFloat()..range.last.toFloat(),
+        )
         // The core owns the Word count: the slider shows it and forwards each change.
         SideEffect { sliderState.value = options.wordCount.toFloat() }
         Slider(
             state = sliderState,
-            onValueChange = { onWordCount(it.roundToInt()) },
+            onValueChange = { onChange(OptionChange.SetWordCount(it.roundToInt())) },
             modifier = Modifier.testTag(WORD_COUNT_TAG).semantics { contentDescription = wordCountLabel },
         )
 
@@ -87,15 +89,15 @@ fun OptionsControls(
             separatorLabels.forEach { (separator, label) ->
                 FilterChip(
                     selected = options.separator == separator,
-                    onClick = { onSeparator(separator) },
+                    onClick = { onChange(OptionChange.SetSeparator(separator)) },
                     label = { Text(stringResource(label)) },
                 )
             }
         }
 
-        ToggleRow(R.string.capitalize, options.capitalize, onCapitalize)
-        ToggleRow(R.string.append_digit, options.appendDigit, onAppendDigit)
-        ToggleRow(R.string.append_symbol, options.appendSymbol, onAppendSymbol)
+        ToggleRow(R.string.capitalize, options.capitalize) { onChange(OptionChange.SetCapitalize(it)) }
+        ToggleRow(R.string.append_digit, options.appendDigit) { onChange(OptionChange.SetAppendDigit(it)) }
+        ToggleRow(R.string.append_symbol, options.appendSymbol) { onChange(OptionChange.SetAppendSymbol(it)) }
     }
 }
 

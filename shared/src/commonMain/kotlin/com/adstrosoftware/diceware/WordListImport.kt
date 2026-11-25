@@ -47,6 +47,13 @@ private const val MAX_LINE_BYTES = 1024L
 private const val RECORDS_PER_RUN = 1 shl 15
 private const val YIELD_EVERY = 4096
 
+/** The fewest dice per Roll a Word List may use: 6⁴ = 1,296 Words, the size of the EFF short lists. */
+private const val MIN_DICE_PER_ROLL = 4
+
+// Import progress: reading the file is the first half, then sorting by Roll and checking Words a quarter each.
+private const val READ_SHARE = 0.5
+private const val SORT_SHARE = 0.25
+
 /**
  * Validates a Word List streamed from [source] into the empty [directory]; throws [WordListRejected] naming
  * the first offending line. Memory stays bounded whatever the size: Words are checked and put in Roll order
@@ -68,7 +75,8 @@ internal suspend fun stageWordList(
         val dicePerRoll = if (lines.isDiceware) {
             writeInRollOrder(byRoll, lines.rollLength, lines.count, output, progress)
         } else {
-            exactLog6(lines.count)?.takeIf { it >= 4 } ?: reject(ImportError.WrongWordCount(lines.count))
+            exactLog6(lines.count)?.takeIf { it >= MIN_DICE_PER_ROLL }
+                ?: reject(ImportError.WrongWordCount(lines.count))
         }
         checkNoDuplicateWords(byWord, lines.count, progress)
         return StagedWordList(dicePerRoll, output.finish())
@@ -80,7 +88,11 @@ internal suspend fun stageWordList(
 }
 
 /** Calls [each] with the number and trimmed text of every non-blank line; reading is the first half of [progress]. */
-private suspend fun BufferedSource.forEachLine(sizeBytes: Long, progress: (Double) -> Unit, each: (Long, String) -> Unit) {
+private suspend fun BufferedSource.forEachLine(
+    sizeBytes: Long,
+    progress: (Double) -> Unit,
+    each: (Long, String) -> Unit,
+) {
     var line = 0L
     var bytesRead = 0L
     while (true) {
@@ -89,7 +101,7 @@ private suspend fun BufferedSource.forEachLine(sizeBytes: Long, progress: (Doubl
         bytesRead += text.utf8Size() + 1
         if (line % YIELD_EVERY == 0L) {
             yield()
-            if (sizeBytes > 0) progress(0.5 * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
+            if (sizeBytes > 0) progress(READ_SHARE * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
         }
         // Malformed UTF-8 decodes to U+FFFD; importing it would silently change the Word.
         if ('\uFFFD' in text) reject(ImportError.NotText(line))
@@ -151,11 +163,11 @@ private suspend fun writeInRollOrder(
     output: WordListWriter,
     progress: (Double) -> Unit,
 ): Int {
-    if (rollLength < 4) reject(ImportError.WrongWordCount(count))
+    if (rollLength < MIN_DICE_PER_ROLL) reject(ImportError.WrongWordCount(count))
     // Records come in Roll order, so the first one that isn't the next Roll shows which Roll is missing.
     val expected = rollsInOrder(rollLength).map { it.joinToString("") }.iterator()
     var previous: Record? = null
-    byRoll.forEachSorted(count, { progress(0.5 + 0.25 * it) }) { record ->
+    byRoll.forEachSorted(count, { progress(READ_SHARE + SORT_SHARE * it) }) { record ->
         previous?.let { if (it.key == record.key) reject(ImportError.RepeatedRoll(record.line, it.line)) }
         val roll = expected.next()
         if (record.key != roll) reject(ImportError.RollNotFound(roll))
@@ -168,7 +180,7 @@ private suspend fun writeInRollOrder(
 
 private suspend fun checkNoDuplicateWords(byWord: ExternalSorter, count: Long, progress: (Double) -> Unit) {
     var previous: Record? = null
-    byWord.forEachSorted(count, { progress(0.75 + 0.25 * it) }) { record ->
+    byWord.forEachSorted(count, { progress(READ_SHARE + SORT_SHARE + SORT_SHARE * it) }) { record ->
         previous?.let { if (it.key == record.key) reject(ImportError.DuplicateWord(record.line, record.word, it.line)) }
         previous = record
     }
@@ -204,7 +216,7 @@ private fun exactLog6(count: Long): Int? {
     var n = 0
     var power = 1L
     while (power < count) {
-        power *= 6
+        power *= DIE_FACES
         n++
     }
     return if (power == count) n else null
@@ -231,7 +243,14 @@ private class ExternalSorter(private val fileSystem: FileSystem, private val dir
         if (runs.isEmpty()) fileSystem.createDirectories(directory)
         val run = directory / "run${runs.size}"
         fileSystem.write(run) {
-            for (r in chunk) writeUtf8(r.key).writeByte('\t'.code).writeDecimalLong(r.line).writeByte('\t'.code).writeUtf8(r.word).writeByte('\n'.code)
+            for (r in chunk) {
+                writeUtf8(r.key)
+                    .writeByte('\t'.code)
+                    .writeDecimalLong(r.line)
+                    .writeByte('\t'.code)
+                    .writeUtf8(r.word)
+                    .writeByte('\n'.code)
+            }
         }
         runs += run
         chunk.clear()
@@ -301,17 +320,23 @@ private class WordListWriter(fileSystem: FileSystem, directory: Path) {
 }
 
 /** A Word List on disk, as [stageWordList] wrote it: a Roll is resolved by reading just its Word. */
-internal class DiskWordList(override val dicePerRoll: Int, fileSystem: FileSystem, directory: Path, name: String) : WordList {
+internal class DiskWordList(
+    override val dicePerRoll: Int,
+    fileSystem: FileSystem,
+    directory: Path,
+    name: String,
+) : WordList {
     private val words = fileSystem.openReadOnly(directory / wordListFileName(name, WORDS_FILE))
     private val offsets = fileSystem.openReadOnly(directory / wordListFileName(name, OFFSETS_FILE))
 
-    // shortcut: reads a few bytes on the caller's (main) thread per Roll; move rolling off-main if that ever shows in ANR or StrictMode reports.
+    // shortcut: reads a few bytes on the caller's (main) thread per Roll; move rolling off-main if that ever
+    // shows in ANR or StrictMode reports.
     override fun resolve(roll: List<Int>): String {
         requireRoll(roll, dicePerRoll)
         // The Roll's place in Roll order: its dice read as a base-6 number, 11…1 first.
-        val place = roll.fold(0L) { acc, die -> acc * 6 + (die - 1) }
+        val place = roll.fold(0L) { acc, die -> acc * DIE_FACES + (die - 1) }
         val bounds = okio.Buffer()
-        offsets.read(place * 8, bounds, 16)
+        offsets.read(place * Long.SIZE_BYTES, bounds, 2L * Long.SIZE_BYTES)
         val start = bounds.readLong()
         val end = bounds.readLong()
         val word = okio.Buffer()

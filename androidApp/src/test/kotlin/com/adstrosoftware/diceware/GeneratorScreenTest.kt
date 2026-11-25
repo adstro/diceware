@@ -50,13 +50,13 @@ class GeneratorScreenTest {
         rule.waitUntil(5_000) { rule.waitForIdle(); generator.state.value != GeneratorState.Loading }
         rule.runOnUiThread {
             val defaults = PassphraseOptions()
-            generator.setWordCount(defaults.wordCount)
-            generator.setSeparator(defaults.separator)
-            generator.setCapitalize(defaults.capitalize)
-            generator.setAppendDigit(defaults.appendDigit)
-            generator.setAppendSymbol(defaults.appendSymbol)
-            generator.setWordList(defaults.wordList)
-            generator.setMode(defaults.mode)
+            generator.change(OptionChange.SetWordCount(defaults.wordCount))
+            generator.change(OptionChange.SetSeparator(defaults.separator))
+            generator.change(OptionChange.SetCapitalize(defaults.capitalize))
+            generator.change(OptionChange.SetAppendDigit(defaults.appendDigit))
+            generator.change(OptionChange.SetAppendSymbol(defaults.appendSymbol))
+            generator.change(OptionChange.SetWordList(defaults.wordList))
+            generator.change(OptionChange.SetMode(defaults.mode))
         }
     }
 
@@ -106,7 +106,9 @@ class GeneratorScreenTest {
     fun fewerWordsLowerTheStrengthAndWarn() {
         shownPassphrase()
 
-        rule.onNodeWithTag(WORD_COUNT_TAG).performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(4f) }
+        rule.onNodeWithTag(WORD_COUNT_TAG)
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(4f) }
 
         assertEquals(4, shownPassphrase().split(" ").size)
         rule.onNodeWithText("Strength: 51.7 bits").assertExists()
@@ -132,7 +134,7 @@ class GeneratorScreenTest {
         rule.runOnUiThread {
             rule.activity.setContent {
                 DicewareTheme {
-                    GeneratorScreen(GeneratorState.Ready("Ab-zoom7!", 20.0, listOf("Ab", "zoom")), onRegenerate = {}, onCopy = {}, onWordLists = {}, onAbout = {})
+                    GeneratorScreen(GeneratorState.Ready("Ab-zoom7!", 20.0, listOf("Ab", "zoom")), onAction = {})
                 }
             }
         }
@@ -182,7 +184,7 @@ class GeneratorScreenTest {
     fun showsAnErrorAndNoPassphraseWhenSecureRandomnessFails() {
         rule.runOnUiThread {
             rule.activity.setContent {
-                DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onRegenerate = {}, onCopy = {}, onWordLists = {}, onAbout = {}) }
+                DicewareTheme { GeneratorScreen(GeneratorState.RandomnessUnavailable, onAction = {}) }
             }
         }
 
@@ -244,6 +246,8 @@ class GeneratorScreenTest {
     }
 
     private fun tapDie(face: Int) {
-        rule.onNodeWithContentDescription(rule.activity.getString(R.string.die_face, face)).performScrollTo().performClick()
+        rule.onNodeWithContentDescription(rule.activity.getString(R.string.die_face, face))
+            .performScrollTo()
+            .performClick()
     }
 }

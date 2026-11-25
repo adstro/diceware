@@ -30,7 +30,11 @@ struct DiceEntryView: View {
                 Text("That Roll doesn't pick a digit. Roll the 2 dice again.").foregroundStyle(.red)
             }
             if entry.step != .done {
-                Text((0..<Int(entry.diceInRoll)).map { $0 < entry.roll.count ? "\(entry.roll[$0])" : "–" }.joined(separator: " "))
+                Text(
+                    (0..<Int(entry.diceInRoll))
+                        .map { $0 < entry.roll.count ? "\(entry.roll[$0])" : "–" }
+                        .joined(separator: " ")
+                )
                     .font(.system(.title, design: .monospaced))
                     .accessibilityLabel("Dice entered: \(entry.roll.map { "\($0)" }.joined(separator: ", "))")
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(72)), count: 3), spacing: 8) {
@@ -58,7 +62,8 @@ struct DiceEntryView: View {
 
     static func prompt(for entry: DiceEntryState) -> String {
         switch entry.step {
-        case .word: String(localized: "Word \(entry.words.count + 1) of \(entry.wordCount): roll \(entry.diceInRoll) dice")
+        case .word:
+            String(localized: "Word \(entry.words.count + 1) of \(entry.wordCount): roll \(entry.diceInRoll) dice")
         case .digit: String(localized: "Digit: roll 2 dice")
         case .symbol: String(localized: "Symbol: roll 2 dice")
         case .done: String(localized: "Every Roll is entered.")

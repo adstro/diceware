@@ -44,7 +44,8 @@ private const val MAX_NAME_LENGTH = 100
  * Every Word List: the bundled EFF Word Lists plus Custom Word Lists imported into [directory], which the apps
  * keep app-private and out of cloud backup. Disk work runs on [ioContext], never the caller's thread.
  */
-// One public function per Word Lists action: this class is the core's API for them, by design (the spec's single test seam).
+// One public function per Word Lists action: this class is the core's API for them, by design (the spec's single
+// test seam).
 @Suppress("TooManyFunctions")
 class WordListLibrary(
     private val bundled: () -> Map<EffWordList, WordList>,
@@ -76,7 +77,8 @@ class WordListLibrary(
                 val bundledLists = bundled()
                 val saved = index.load()
                 eff.load(bundledLists, saved)
-                custom.value = saved.filterIsInstance<IndexEntry.Custom>().associate { CustomWordListId(it.sha256) to index.open(it) }
+                custom.value = saved.filterIsInstance<IndexEntry.Custom>()
+                    .associate { CustomWordListId(it.sha256) to index.open(it) }
             }
             publish()
             loaded.complete(Unit)
@@ -109,7 +111,9 @@ class WordListLibrary(
                 fileSystem.deleteRecursively(staging)
                 fileSystem.createDirectories(staging)
                 val staged = UnreadableSource(openOrReject(open)).buffer().use { source ->
-                    stageWordList(source, sizeBytes, fileSystem, staging) { mutableImportState.value = ImportState.Importing(it) }
+                    stageWordList(source, sizeBytes, fileSystem, staging) {
+                        mutableImportState.value = ImportState.Importing(it)
+                    }
                 }
                 val name = nameOf(fileName)
                 index.lock.withLock {
@@ -155,7 +159,9 @@ class WordListLibrary(
     fun rename(id: CustomWordListId, name: String) {
         val newName = name.trim().take(MAX_NAME_LENGTH)
         if (newName.isEmpty()) return
-        changeIndex { list -> list.map { if (it is IndexEntry.Custom && it.sha256 == id.sha256) it.copy(name = newName) else it } }
+        changeIndex { list ->
+            list.map { if (it is IndexEntry.Custom && it.sha256 == id.sha256) it.copy(name = newName) else it }
+        }
     }
 
     /** Deletes a Custom Word List; if it was the Selected Word List the Generator falls back to EFF Large. */
@@ -200,7 +206,8 @@ class WordListLibrary(
     }
 
     private fun publish() {
-        mutableWordLists.value = eff.infos() + customEntries().map { wordListInfo(CustomWordListId(it.sha256), it.name, it.dicePerRoll) }
+        mutableWordLists.value = eff.infos() +
+            customEntries().map { wordListInfo(CustomWordListId(it.sha256), it.name, it.dicePerRoll) }
     }
 }
 

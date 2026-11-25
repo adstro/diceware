@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: pipx run codespell==2.4.3
+      - run: git ls-files -z | xargs -0 pipx run codespell==2.4.3
 
   analysis-bypasses:
     name: Approved analysis bypasses

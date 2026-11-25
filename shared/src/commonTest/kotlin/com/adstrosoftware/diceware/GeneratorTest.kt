@@ -81,7 +81,14 @@ class GeneratorTest {
 
         assertEquals(PassphraseOptions(), generator.options.value)
         assertEquals(
-            PassphraseOptions(6, Separator.SPACE, capitalize = false, appendDigit = false, appendSymbol = false, wordList = EffWordList.LARGE),
+            PassphraseOptions(
+                6,
+                Separator.SPACE,
+                capitalize = false,
+                appendDigit = false,
+                appendSymbol = false,
+                wordList = EffWordList.LARGE,
+            ),
             generator.options.value,
         )
     }
@@ -91,7 +98,7 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(24), *diceBytes(*IntArray(32) { 2 })))
         generator.ready()
 
-        generator.setWordCount(8)
+        generator.change(OptionChange.SetWordCount(8))
 
         val ready = generator.ready()
         assertEquals(List(8) { "w2222" }.joinToString(" "), ready.passphrase)
@@ -105,11 +112,11 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(24 + 4 + 80)))
         generator.ready()
 
-        generator.setWordCount(0)
+        generator.change(OptionChange.SetWordCount(0))
         assertEquals(1, generator.options.value.wordCount)
         assertEquals("w1111", generator.ready().passphrase)
 
-        generator.setWordCount(21)
+        generator.change(OptionChange.SetWordCount(21))
         assertEquals(20, generator.options.value.wordCount)
     }
 
@@ -124,10 +131,10 @@ class GeneratorTest {
         )
         val generator = generator(ScriptedRandom(*ones(24 + 8 + expected.size * 8)))
         generator.ready()
-        generator.setWordCount(2)
+        generator.change(OptionChange.SetWordCount(2))
 
         for ((separator, passphrase) in expected) {
-            generator.setSeparator(separator)
+            generator.change(OptionChange.SetSeparator(separator))
             assertEquals(passphrase, generator.ready().passphrase)
         }
     }
@@ -137,7 +144,7 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(48)))
         val before = generator.ready().strengthBits
 
-        generator.setCapitalize(true)
+        generator.change(OptionChange.SetCapitalize(true))
 
         val ready = generator.ready()
         assertEquals(List(6) { "W1111" }.joinToString(" "), ready.passphrase)
@@ -150,7 +157,7 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(24), *ones(24), *diceBytes(6, 1, 4, 3)))
         val before = generator.ready().strengthBits
 
-        generator.setAppendDigit(true)
+        generator.change(OptionChange.SetAppendDigit(true))
 
         val ready = generator.ready()
         assertEquals(List(6) { "w1111" }.joinToString(" ") + "6", ready.passphrase)
@@ -159,11 +166,13 @@ class GeneratorTest {
 
     @Test
     fun aPassphraseListsItsWordsAsShownSoScreenReadersCanAnnounceEachOne() = runTest {
-        val generator = generator(ScriptedRandom(*ones(24), *ones(24), *diceBytes(1, 2, 3, 4, 6, 6, 6, 6, *IntArray(16) { 1 }, 4, 3)))
+        val generator = generator(
+            ScriptedRandom(*ones(24), *ones(24), *diceBytes(1, 2, 3, 4, 6, 6, 6, 6, *IntArray(16) { 1 }, 4, 3)),
+        )
         generator.ready()
 
-        generator.setCapitalize(true)
-        generator.setAppendDigit(true)
+        generator.change(OptionChange.SetCapitalize(true))
+        generator.change(OptionChange.SetAppendDigit(true))
 
         val ready = generator.ready()
         assertEquals(listOf("W1234", "W6666") + List(4) { "W1111" }, ready.words)
@@ -175,7 +184,12 @@ class GeneratorTest {
         val ready = GeneratorState.Ready("Ab-zoom7!", 20.0, listOf("Ab", "zoom"))
 
         assertEquals(
-            listOf(PassphrasePart("Ab-", "Ab"), PassphrasePart("zoom", "zoom"), PassphrasePart("7", "7"), PassphrasePart("!", "!")),
+            listOf(
+                PassphrasePart("Ab-", "Ab"),
+                PassphrasePart("zoom", "zoom"),
+                PassphrasePart("7", "7"),
+                PassphrasePart("!", "!"),
+            ),
             ready.parts,
         )
         // No Separator: the Words simply follow each other.
@@ -186,13 +200,16 @@ class GeneratorTest {
     fun everyDigitHasExactlyThreeOfTheThirtyMappedOutcomes() = runTest {
         val outcomes = (1..6).flatMap { a -> (1..6).map { b -> listOf(a, b) } }.take(30)
         val generator = generator(
-            ScriptedRandom(*ones(24 + 4), *outcomes.flatMap { ones(4).toList() + diceBytes(*it.toIntArray()).toList() }.toIntArray()),
+            ScriptedRandom(
+                *ones(24 + 4),
+                *outcomes.flatMap { ones(4).toList() + diceBytes(*it.toIntArray()).toList() }.toIntArray(),
+            ),
         )
         generator.ready()
-        generator.setWordCount(1)
+        generator.change(OptionChange.SetWordCount(1))
         val digits = mutableListOf<Char>()
 
-        generator.setAppendDigit(true)
+        generator.change(OptionChange.SetAppendDigit(true))
         digits += generator.ready().passphrase.last()
         repeat(outcomes.size - 1) {
             generator.regenerate()
@@ -206,13 +223,16 @@ class GeneratorTest {
     fun appendedSymbolComesFromATwoDiceRollThreeOutcomesPerSymbol() = runTest {
         val outcomes = (1..6).flatMap { a -> (1..6).map { b -> listOf(a, b) } }
         val generator = generator(
-            ScriptedRandom(*ones(24 + 4), *outcomes.flatMap { ones(4).toList() + diceBytes(*it.toIntArray()).toList() }.toIntArray()),
+            ScriptedRandom(
+                *ones(24 + 4),
+                *outcomes.flatMap { ones(4).toList() + diceBytes(*it.toIntArray()).toList() }.toIntArray(),
+            ),
         )
         generator.ready()
-        generator.setWordCount(1)
+        generator.change(OptionChange.SetWordCount(1))
         val symbols = mutableListOf<Char>()
 
-        generator.setAppendSymbol(true)
+        generator.change(OptionChange.SetAppendSymbol(true))
         symbols += generator.ready().passphrase.last()
         repeat(outcomes.size - 1) {
             generator.regenerate()
@@ -229,10 +249,10 @@ class GeneratorTest {
         // Word count 1: (2,1) → outcome 6 → digit 2; (1,1) → outcome 0 → '!'.
         val generator = generator(ScriptedRandom(*ones(24 + 4 + 4 + 2), *ones(4), *diceBytes(2, 1, 1, 1)))
         generator.ready()
-        generator.setWordCount(1)
-        generator.setAppendDigit(true)
+        generator.change(OptionChange.SetWordCount(1))
+        generator.change(OptionChange.SetAppendDigit(true))
 
-        generator.setAppendSymbol(true)
+        generator.change(OptionChange.SetAppendSymbol(true))
 
         val ready = generator.ready()
         assertEquals("w11112!", ready.passphrase)
@@ -243,13 +263,17 @@ class GeneratorTest {
     fun settingsAreRestoredInTheNextSession() = runTest {
         val fileSystem = FakeFileSystem()
         val firstSession = Job()
-        val first = generator(ScriptedRandom(*ones(24 + 5 * 3 * 4 + 10)), fileSystem, CoroutineScope(coroutineContext + firstSession))
+        val first = generator(
+            ScriptedRandom(*ones(24 + 5 * 3 * 4 + 10)),
+            fileSystem,
+            CoroutineScope(coroutineContext + firstSession),
+        )
         first.ready()
-        first.setWordCount(3)
-        first.setSeparator(Separator.HYPHEN)
-        first.setCapitalize(true)
-        first.setAppendDigit(true)
-        first.setAppendSymbol(true)
+        first.change(OptionChange.SetWordCount(3))
+        first.change(OptionChange.SetSeparator(Separator.HYPHEN))
+        first.change(OptionChange.SetCapitalize(true))
+        first.change(OptionChange.SetAppendDigit(true))
+        first.change(OptionChange.SetAppendSymbol(true))
         testScheduler.advanceUntilIdle()
         firstSession.cancelAndJoin()
 
@@ -274,7 +298,7 @@ class GeneratorTest {
         val generator = generator(random, wordLists = effShaped)
         generator.ready()
 
-        generator.setWordList(EffWordList.SHORT_2)
+        generator.change(OptionChange.SetWordList(EffWordList.SHORT_2))
 
         val ready = generator.ready()
         assertEquals(EffWordList.SHORT_2, generator.options.value.wordList)
@@ -289,9 +313,9 @@ class GeneratorTest {
         val random = ScriptedRandom(*ones(30), *ones(24), *diceBytes(*IntArray(30) { 3 }))
         val generator = generator(random, wordLists = effShaped)
         generator.ready()
-        generator.setWordList(EffWordList.SHORT_1)
+        generator.change(OptionChange.SetWordList(EffWordList.SHORT_1))
 
-        generator.setWordList(EffWordList.LARGE)
+        generator.change(OptionChange.SetWordList(EffWordList.LARGE))
 
         val ready = generator.ready()
         assertEquals(List(6) { "large33333" }.joinToString(" "), ready.passphrase)
@@ -304,9 +328,14 @@ class GeneratorTest {
     fun selectedWordListIsRestoredInTheNextSession() = runTest {
         val fileSystem = FakeFileSystem()
         val firstSession = Job()
-        val first = generator(ScriptedRandom(*ones(30 + 24)), fileSystem, CoroutineScope(coroutineContext + firstSession), effShaped)
+        val first = generator(
+            ScriptedRandom(*ones(30 + 24)),
+            fileSystem,
+            CoroutineScope(coroutineContext + firstSession),
+            effShaped,
+        )
         first.ready()
-        first.setWordList(EffWordList.SHORT_1)
+        first.change(OptionChange.SetWordList(EffWordList.SHORT_1))
         testScheduler.advanceUntilIdle()
         firstSession.cancelAndJoin()
 
@@ -335,7 +364,7 @@ class GeneratorTest {
         assertEquals(Mode.RANDOM, generator.options.value.mode)
         generator.ready()
 
-        generator.setMode(Mode.DICE)
+        generator.change(OptionChange.SetMode(Mode.DICE))
 
         assertEquals(Mode.DICE, generator.options.value.mode)
         assertIs<GeneratorState.AwaitingDice>(generator.state.value)
@@ -349,7 +378,7 @@ class GeneratorTest {
         val firstSession = Job()
         val first = generator(ScriptedRandom(*ones(24)), fileSystem, CoroutineScope(coroutineContext + firstSession))
         first.ready()
-        first.setMode(Mode.DICE)
+        first.change(OptionChange.SetMode(Mode.DICE))
         testScheduler.advanceUntilIdle()
         firstSession.cancelAndJoin()
 
@@ -417,13 +446,16 @@ class GeneratorTest {
     @Test
     fun theDigitTakesATwoDiceRollAndAnUnmappedOutcomePromptsARollAgain() = runTest {
         val generator = diceMode(wordCount = 1)
-        generator.setAppendDigit(true)
+        generator.change(OptionChange.SetAppendDigit(true))
         generator.enterDice(1, 1, 1, 1)
         assertEquals(DiceEntryState(listOf("w1111"), 1, DiceStep.DIGIT, diceInRoll = 2), generator.diceEntry.value)
 
         // (6,1) is outcome 30 of 0–35: no digit, so the user rolls the two dice again.
         generator.enterDice(6, 1)
-        assertEquals(DiceEntryState(listOf("w1111"), 1, DiceStep.DIGIT, diceInRoll = 2, rerollDigit = true), generator.diceEntry.value)
+        assertEquals(
+            DiceEntryState(listOf("w1111"), 1, DiceStep.DIGIT, diceInRoll = 2, rerollDigit = true),
+            generator.diceEntry.value,
+        )
         assertIs<GeneratorState.AwaitingDice>(generator.state.value)
 
         // (4,3) is outcome 20 → digit 6.
@@ -438,8 +470,8 @@ class GeneratorTest {
     @Test
     fun theSymbolTakesATwoDiceRollThreeOutcomesPerSymbolAfterTheDigit() = runTest {
         val generator = diceMode(wordCount = 1)
-        generator.setAppendDigit(true)
-        generator.setAppendSymbol(true)
+        generator.change(OptionChange.SetAppendDigit(true))
+        generator.change(OptionChange.SetAppendSymbol(true))
         generator.enterDice(2, 2, 2, 2, 2, 1)
         assertEquals(DiceStep.SYMBOL, generator.diceEntry.value.step)
         assertEquals(2, generator.diceEntry.value.diceInRoll)
@@ -453,7 +485,7 @@ class GeneratorTest {
     @Test
     fun everySymbolHasExactlyThreeOfTheThirtySixTwoDiceOutcomes() = runTest {
         val generator = diceMode(wordCount = 1)
-        generator.setAppendSymbol(true)
+        generator.change(OptionChange.SetAppendSymbol(true))
         val symbols = (1..6).flatMap { a ->
             (1..6).map { b ->
                 generator.regenerate()
@@ -479,18 +511,18 @@ class GeneratorTest {
     @Test
     fun changingAnySettingResetsTheDiceEntry() = runTest {
         val generator = diceMode(wordCount = 2)
-        val changes = listOf<Generator.() -> Unit>(
-            { setWordCount(3) },
-            { setSeparator(Separator.HYPHEN) },
-            { setCapitalize(true) },
-            { setAppendDigit(true) },
-            { setAppendSymbol(true) },
-            { setWordList(EffWordList.SHORT_1) },
+        val changes = listOf(
+            OptionChange.SetWordCount(3),
+            OptionChange.SetSeparator(Separator.HYPHEN),
+            OptionChange.SetCapitalize(true),
+            OptionChange.SetAppendDigit(true),
+            OptionChange.SetAppendSymbol(true),
+            OptionChange.SetWordList(EffWordList.SHORT_1),
         )
 
         for (change in changes) {
             generator.enterDice(1, 2, 3, 4, 5)
-            generator.change()
+            generator.change(change)
             assertEquals(emptyList(), generator.diceEntry.value.words)
             assertEquals(emptyList(), generator.diceEntry.value.roll)
             assertIs<GeneratorState.AwaitingDice>(generator.state.value)
@@ -526,12 +558,12 @@ class GeneratorTest {
         generator.enterDice(1, 2, 3, 4, 5)
         assertEquals("large12345", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
 
-        generator.setWordList(EffWordList.SHORT_1)
+        generator.change(OptionChange.SetWordList(EffWordList.SHORT_1))
         assertEquals(4, generator.diceEntry.value.diceInRoll)
         generator.enterDice(6, 5, 4, 3)
         assertEquals("short1_6543", assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
 
-        generator.setWordList(EffWordList.SHORT_2)
+        generator.change(OptionChange.SetWordList(EffWordList.SHORT_2))
         assertEquals(6, generator.diceEntry.value.diceInRoll)
         generator.enterDice(1, 2, 3, 4, 5)
         assertIs<GeneratorState.AwaitingDice>(generator.state.value)
@@ -546,12 +578,15 @@ class GeneratorTest {
     fun switchingBackToRandomModeRollsWithTheSecureGeneratorAgain() = runTest {
         val generator = generator(ScriptedRandom(*ones(24), *diceBytes(*IntArray(24) { 5 })))
         generator.ready()
-        generator.setMode(Mode.DICE)
+        generator.change(OptionChange.SetMode(Mode.DICE))
         generator.enterDice(1, 2)
 
-        generator.setMode(Mode.RANDOM)
+        generator.change(OptionChange.SetMode(Mode.RANDOM))
 
-        assertEquals(List(6) { "w5555" }.joinToString(" "), assertIs<GeneratorState.Ready>(generator.state.value).passphrase)
+        assertEquals(
+            List(6) { "w5555" }.joinToString(" "),
+            assertIs<GeneratorState.Ready>(generator.state.value).passphrase,
+        )
     }
 
     @Test
@@ -561,7 +596,7 @@ class GeneratorTest {
         generator.ready()
         val id = generator.importCustom(5, "custom")
 
-        generator.setWordList(id)
+        generator.change(OptionChange.SetWordList(id))
 
         val ready = generator.ready()
         assertEquals(List(6) { "custom22222" }.joinToString(" "), ready.passphrase)
@@ -575,9 +610,13 @@ class GeneratorTest {
         // The first session keeps its list open; the OS lets the next one manage it regardless.
         fileSystem.allowDeletingOpenFiles = true
         val firstSession = Job()
-        val first = generator(ScriptedRandom(*ones(24 + 30)), fileSystem, CoroutineScope(coroutineContext + firstSession))
+        val first = generator(
+            ScriptedRandom(*ones(24 + 30)),
+            fileSystem,
+            CoroutineScope(coroutineContext + firstSession),
+        )
         first.ready()
-        first.setWordList(first.importCustom(5, "custom"))
+        first.change(OptionChange.SetWordList(first.importCustom(5, "custom")))
         testScheduler.advanceUntilIdle()
         firstSession.cancelAndJoin()
 
@@ -591,7 +630,7 @@ class GeneratorTest {
         val generator = generator(ScriptedRandom(*ones(30 + 24 + 30)), wordLists = effShaped)
         generator.ready()
         val id = generator.importCustom(4, "custom")
-        generator.setWordList(id)
+        generator.change(OptionChange.SetWordList(id))
 
         generator.library.delete(id)
 
@@ -618,15 +657,18 @@ class GeneratorTest {
     private fun rollNamed(dice: Int, prefix: String): WordList =
         WordList.parse(allRolls(dice).joinToString("\n") { "$it\t$prefix$it" })
 
-    /** A Generator in Dice Mode with [wordCount] Words; its random source is empty, so any random Roll fails the test. */
+    /**
+     * A Generator in Dice Mode with [wordCount] Words; its random source is empty, so any random Roll fails the
+     * test.
+     */
     private suspend fun TestScope.diceMode(
         wordCount: Int,
         wordLists: Map<EffWordList, WordList> = EffWordList.entries.associateWith { rollNamedList },
     ): Generator {
         val generator = generator(ScriptedRandom(), wordLists = wordLists)
         generator.settled()
-        generator.setMode(Mode.DICE)
-        generator.setWordCount(wordCount)
+        generator.change(OptionChange.SetMode(Mode.DICE))
+        generator.change(OptionChange.SetWordCount(wordCount))
         return generator
     }
 

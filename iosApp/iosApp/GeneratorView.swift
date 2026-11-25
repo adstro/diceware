@@ -136,7 +136,10 @@ struct PassphraseView: View {
                     ForEach(Array(ready.parts.enumerated()), id: \.offset) { _, part in
                         Text(part.spoken)
                             .accessibilityAction(named: "Spell out") {
-                                UIAccessibility.post(notification: .announcement, argument: Self.spelledOut(ready.passphrase))
+                                UIAccessibility.post(
+                                    notification: .announcement,
+                                    argument: Self.spelledOut(ready.passphrase)
+                                )
                             }
                     }
                 }
@@ -158,7 +161,13 @@ struct OptionsControls: View {
     var body: some View {
         let range = PassphraseOptions.companion.WORD_COUNTS
         VStack(spacing: 12) {
-            Picker("Mode", selection: Binding(get: { options.mode }, set: { generator.setMode(mode: $0) })) {
+            Picker(
+                "Mode",
+                selection: Binding(
+                    get: { options.mode },
+                    set: { generator.change(option: OptionChangeSetMode(mode: $0)) }
+                )
+            ) {
                 Text("Random").tag(Mode.random)
                 Text("Dice").tag(Mode.dice)
             }
@@ -169,7 +178,7 @@ struct OptionsControls: View {
                     // Word List ids are Kotlin objects behind a protocol, so the Picker selects by position.
                     selection: Binding(
                         get: { wordLists.firstIndex { ($0.id as AnyObject).isEqual(options.wordList) } ?? 0 },
-                        set: { generator.setWordList(wordList: wordLists[$0].id) }
+                        set: { generator.change(option: OptionChangeSetWordList(wordList: wordLists[$0].id)) }
                     )
                 ) {
                     ForEach(wordLists.indices, id: \.self) { Text(WordListsView.name(of: wordLists[$0])).tag($0) }
@@ -177,28 +186,43 @@ struct OptionsControls: View {
             }
             Stepper(
                 "Words: \(options.wordCount)",
-                value: Binding(get: { Int(options.wordCount) }, set: { generator.setWordCount(count: Int32($0)) }),
+                value: Binding(
+                    get: { Int(options.wordCount) },
+                    set: { generator.change(option: OptionChangeSetWordCount(count: Int32($0))) }
+                ),
                 in: Int(range.first)...Int(range.last)
             )
             LabeledContent("Separator") {
                 Picker(
                     "Separator",
-                    selection: Binding(get: { options.separator }, set: { generator.setSeparator(separator: $0) })
+                    selection: Binding(
+                        get: { options.separator },
+                        set: { generator.change(option: OptionChangeSetSeparator(separator: $0)) }
+                    )
                 ) {
                     ForEach(Separator.allCases, id: \.self) { Text(Self.label(of: $0)).tag($0) }
                 }
             }
             Toggle(
                 "Capitalize each Word",
-                isOn: Binding(get: { options.capitalize }, set: { generator.setCapitalize(on: $0) })
+                isOn: Binding(
+                    get: { options.capitalize },
+                    set: { generator.change(option: OptionChangeSetCapitalize(on: $0)) }
+                )
             )
             Toggle(
                 "Add a digit",
-                isOn: Binding(get: { options.appendDigit }, set: { generator.setAppendDigit(on: $0) })
+                isOn: Binding(
+                    get: { options.appendDigit },
+                    set: { generator.change(option: OptionChangeSetAppendDigit(on: $0)) }
+                )
             )
             Toggle(
                 "Add a symbol",
-                isOn: Binding(get: { options.appendSymbol }, set: { generator.setAppendSymbol(on: $0) })
+                isOn: Binding(
+                    get: { options.appendSymbol },
+                    set: { generator.change(option: OptionChangeSetAppendSymbol(on: $0)) }
+                )
             )
         }
     }

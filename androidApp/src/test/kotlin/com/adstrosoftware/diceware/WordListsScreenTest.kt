@@ -33,7 +33,7 @@ class WordListsScreenTest {
         val generator = ViewModelProvider(rule.activity)[GeneratorViewModel::class.java].generator
         // waitUntil alone may not run the main looper the Generator resumes on, so idle it each time.
         rule.waitUntil(5_000) { rule.waitForIdle(); generator.state.value != GeneratorState.Loading }
-        rule.runOnUiThread { generator.setWordList(EffWordList.LARGE) }
+        rule.runOnUiThread { generator.change(OptionChange.SetWordList(EffWordList.LARGE)) }
     }
 
     private fun shownPassphrase(): String {

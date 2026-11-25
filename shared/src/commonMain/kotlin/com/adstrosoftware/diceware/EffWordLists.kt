@@ -85,7 +85,9 @@ internal class EffWordLists(
                         throw EffUpdateFailed(EffUpdateError.Invalid(list, e.error))
                     }
                     if (staged.sha256 == sha256InUse(list)) return@mapNotNull null
-                    for (file in WORD_LIST_FILES) fileSystem.atomicMove(listStaging / file, staging / wordListFileName(staged.sha256, file))
+                    for (file in WORD_LIST_FILES) {
+                        fileSystem.atomicMove(listStaging / file, staging / wordListFileName(staged.sha256, file))
+                    }
                     found += IndexEntry.EffCopy(staged.sha256, staged.dicePerRoll, list)
                     val downloaded = DiskWordList(staged.dicePerRoll, fileSystem, staging, staged.sha256)
                     try { change(list, inUse(list), downloaded) } finally { downloaded.close() }
@@ -123,9 +125,13 @@ internal class EffWordLists(
                             }
                         }
                         val replaced = toApply.map { it.wordList }.toSet()
-                        index.save(index.entries.value.filterNot { it is IndexEntry.EffCopy && it.wordList in replaced } + newCopies)
-                        // shortcut: a replaced earlier copy is not closed, as a Roll on the main thread may be reading it;
-                        // one leaked handle per update of an update, close it from the main thread if that ever matters.
+                        index.save(
+                            index.entries.value.filterNot { it is IndexEntry.EffCopy && it.wordList in replaced } +
+                                newCopies,
+                        )
+                        // shortcut: a replaced earlier copy is not closed, as a Roll on the main thread may be
+                        // reading it; one leaked handle per update of an update, close it from the main thread if
+                        // that ever matters.
                         copies.update { old -> old - replaced + newCopies.associate { it.wordList to index.open(it) } }
                     }
                     EffUpdateState.Updated

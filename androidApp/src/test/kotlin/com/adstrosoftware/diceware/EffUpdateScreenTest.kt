@@ -34,11 +34,15 @@ class EffUpdateScreenTest {
         DicewareTheme {
             WordListsScreen(
                 lists, ImportState.Idle, state,
-                onNavigateUp = {}, onImport = {}, onCancelImport = {}, onDismissImportResult = {}, onRename = { _, _ -> }, onDelete = {},
-                onCheckForUpdates = { actions += "check" },
-                onApplyUpdate = { actions += "apply" },
-                onDismissUpdate = { actions += "dismiss" },
-                onRestoreBundledWordLists = { actions += "restore" },
+                onAction = { action ->
+                    when (action) {
+                        WordListsAction.CheckForUpdates -> actions += "check"
+                        WordListsAction.ApplyUpdate -> actions += "apply"
+                        WordListsAction.DismissUpdate -> actions += "dismiss"
+                        WordListsAction.RestoreBundledWordLists -> actions += "restore"
+                        else -> {}
+                    }
+                },
             )
         }
     }
@@ -62,7 +66,15 @@ class EffUpdateScreenTest {
     @Test
     fun anUpdateShowsWhatChangedAndAppliesOnlyWhenConfirmed() {
         state = EffUpdateState.UpdateAvailable(
-            listOf(EffWordListChange(EffWordList.SHORT_1, 7, 2, listOf("kiwi", "lime", "fig", "date", "plum"), listOf("acid", "zoom"))),
+            listOf(
+                EffWordListChange(
+                    EffWordList.SHORT_1,
+                    7,
+                    2,
+                    listOf("kiwi", "lime", "fig", "date", "plum"),
+                    listOf("acid", "zoom"),
+                ),
+            ),
         )
         show()
 
@@ -90,6 +102,8 @@ class EffUpdateScreenTest {
         state = EffUpdateState.Failed(EffUpdateError.Redirected)
         show()
 
-        rule.onNodeWithText("eff.org redirected the download to another site, so it was refused. Nothing was changed.").assertExists()
+        rule.onNodeWithText(
+            "eff.org redirected the download to another site, so it was refused. Nothing was changed.",
+        ).assertExists()
     }
 }

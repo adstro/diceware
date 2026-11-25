@@ -3,6 +3,7 @@ package com.adstrosoftware.diceware
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -85,16 +86,14 @@ internal suspend fun HttpClient.download(url: String): Buffer {
             prepareGet(current).execute { response ->
                 when {
                     response.status.value in 300..399 -> {
-                        val location = response.headers[HttpHeaders.Location] ?: fail(EffUpdateError.Redirected)
-                        val next = runCatching { URLBuilder(current).takeFrom(location).build() }.getOrNull() ?: fail(EffUpdateError.Redirected)
-                        if (next.protocol != URLProtocol.HTTPS || next.host != current.host) fail(EffUpdateError.Redirected)
-                        current = next
+                        current = redirectTarget(current, response)
                         null
                     }
                     response.status != HttpStatusCode.OK -> fail(EffUpdateError.HttpStatus(response.status.value))
                     (response.contentLength() ?: 0) > MAX_DOWNLOAD_BYTES -> fail(EffUpdateError.TooLarge)
                     else -> {
-                        // Read one byte past the cap to tell "exactly the cap" from "too large" without a Content-Length.
+                        // Read one byte past the cap to tell "exactly the cap" from "too large" without a
+                        // Content-Length.
                         val bytes = response.bodyAsChannel().readBuffer(MAX_DOWNLOAD_BYTES + 1).readByteArray()
                         if (bytes.size > MAX_DOWNLOAD_BYTES) fail(EffUpdateError.TooLarge)
                         Buffer().write(bytes)
@@ -113,6 +112,15 @@ internal suspend fun HttpClient.download(url: String): Buffer {
     fail(EffUpdateError.Redirected)
 }
 
+/** Where [response] redirects from [current], refused unless it parses and stays on HTTPS and the same host. */
+private fun redirectTarget(current: Url, response: HttpResponse): Url {
+    val location = response.headers[HttpHeaders.Location] ?: fail(EffUpdateError.Redirected)
+    val next = runCatching { URLBuilder(current).takeFrom(location).build() }.getOrNull()
+        ?: fail(EffUpdateError.Redirected)
+    if (next.protocol != URLProtocol.HTTPS || next.host != current.host) fail(EffUpdateError.Redirected)
+    return next
+}
+
 /** Every Word in Roll order, by resolving each Roll in turn (ADR 0002: there is no index access). */
 internal fun WordList.wordsInRollOrder(): Sequence<String> = rollsInOrder(dicePerRoll).map(::resolve)
 
@@ -128,5 +136,11 @@ internal fun change(list: EffWordList, current: WordList, downloaded: WordList):
     val new = downloaded.wordsInRollOrder().toSet()
     val added = new - old
     val removed = old - new
-    return EffWordListChange(list, added.size.toLong(), removed.size.toLong(), added.take(SAMPLE_SIZE), removed.take(SAMPLE_SIZE))
+    return EffWordListChange(
+        list,
+        added.size.toLong(),
+        removed.size.toLong(),
+        added.take(SAMPLE_SIZE),
+        removed.take(SAMPLE_SIZE),
+    )
 }

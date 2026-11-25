@@ -2,9 +2,6 @@
 included:
   - iosApp
   - iosAppTests
-# Formatting-only rules: they flag style, not bugs.
-disabled_rules:
-  - line_length
 opt_in_rules:
   - accessibility_label_for_image
   - accessibility_trait_for_button
@@ -24,7 +21,4 @@ opt_in_rules:
   - unhandled_throwing_task
   - unowned_variable_capture
   - weak_delegate
-# A flat `switch` mapping each case to a value is a table, not branching logic.
-cyclomatic_complexity:
-  ignores_case_statements: true
 strict: true

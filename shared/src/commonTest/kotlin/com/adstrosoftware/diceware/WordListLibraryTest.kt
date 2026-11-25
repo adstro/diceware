@@ -77,7 +77,10 @@ class WordListLibraryTest {
     fun rejectsADicewareListMissingARollNamingTheRollOrWithTooFewDice() = runTest {
         // One Roll left out: 1295 Words, no repeats.
         assertRejected(ImportError.RollNotFound("1111"), diceware(4).lines().drop(1).joinToString("\n"))
-        assertRejected(ImportError.RollNotFound("1122"), diceware(4).lines().filterIndexed { i, _ -> i != 7 }.joinToString("\n"))
+        assertRejected(
+            ImportError.RollNotFound("1122"),
+            diceware(4).lines().filterIndexed { i, _ -> i != 7 }.joinToString("\n"),
+        )
         assertRejected(ImportError.RollNotFound("6666"), diceware(4).lines().dropLast(1).joinToString("\n"))
         assertRejected(ImportError.WrongWordCount(216), diceware(3))
     }
@@ -187,7 +190,9 @@ class WordListLibraryTest {
         first.importText("animals.txt", plain(4))
         val id = first.loaded().last().id as CustomWordListId
         // The index format so far: a Custom Word List has no "eff" field.
-        fileSystem.write("/lists/index.json".toPath()) { writeUtf8("""[{"sha256":"${id.sha256}","name":"Beasts","dicePerRoll":4}]""") }
+        fileSystem.write("/lists/index.json".toPath()) {
+            writeUtf8("""[{"sha256":"${id.sha256}","name":"Beasts","dicePerRoll":4}]""")
+        }
 
         fileSystem.allowDeletingOpenFiles = true
         val second = library()

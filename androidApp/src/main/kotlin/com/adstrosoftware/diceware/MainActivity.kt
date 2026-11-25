@@ -72,7 +72,9 @@ class MainActivity : ComponentActivity() {
         val uri = when (intent?.action) {
             Intent.ACTION_VIEW -> intent.data
             // A malformed extra from another app must not crash us.
-            Intent.ACTION_SEND -> runCatching { IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) }.getOrNull()
+            Intent.ACTION_SEND -> runCatching {
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            }.getOrNull()
             else -> null
         } ?: return
         if (viewModel.import(uri)) showWordLists = true
@@ -111,21 +113,20 @@ class MainActivity : ComponentActivity() {
                     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                         uri?.let(viewModel::import)
                     }
-                    WordListsScreen(
-                        wordLists,
-                        importState,
-                        effUpdateState,
-                        onNavigateUp = { backStack.removeLastOrNull() },
-                        onImport = { pickFile.launch(arrayOf("text/*")) },
-                        onCancelImport = library::cancelImport,
-                        onDismissImportResult = library::dismissImportResult,
-                        onRename = library::rename,
-                        onDelete = library::delete,
-                        onCheckForUpdates = viewModel::checkForEffUpdates,
-                        onApplyUpdate = library::applyEffUpdate,
-                        onDismissUpdate = library::dismissEffUpdate,
-                        onRestoreBundledWordLists = library::restoreBundledEffWordLists,
-                    )
+                    WordListsScreen(wordLists, importState, effUpdateState, onAction = { action ->
+                        when (action) {
+                            WordListsAction.NavigateUp -> backStack.removeLastOrNull()
+                            WordListsAction.Import -> pickFile.launch(arrayOf("text/*"))
+                            WordListsAction.CancelImport -> library.cancelImport()
+                            WordListsAction.DismissImportResult -> library.dismissImportResult()
+                            is WordListsAction.Rename -> library.rename(action.id, action.name)
+                            is WordListsAction.Delete -> library.delete(action.id)
+                            WordListsAction.CheckForUpdates -> viewModel.checkForEffUpdates()
+                            WordListsAction.ApplyUpdate -> library.applyEffUpdate()
+                            WordListsAction.DismissUpdate -> library.dismissEffUpdate()
+                            WordListsAction.RestoreBundledWordLists -> library.restoreBundledEffWordLists()
+                        }
+                    })
                 }
                 entry<DiceEntryRoute> {
                     val entry by generator.diceEntry.collectAsStateWithLifecycle()
@@ -146,30 +147,25 @@ class MainActivity : ComponentActivity() {
         val state by generator.state.collectAsStateWithLifecycle()
         val options by generator.options.collectAsStateWithLifecycle()
         val wordLists by generator.library.wordLists.collectAsStateWithLifecycle()
+        val openWordLists = dropUnlessResumed { backStack.add(WordListsRoute) }
+        val openAbout = dropUnlessResumed { backStack.add(AboutRoute) }
+        val enterDice = dropUnlessResumed {
+            generator.startDiceEntry()
+            backStack.add(DiceEntryRoute)
+        }
         GeneratorScreen(
             state,
-            onRegenerate = generator::regenerate,
-            onCopy = ::copySensitive,
-            onWordLists = dropUnlessResumed { backStack.add(WordListsRoute) },
-            onAbout = dropUnlessResumed { backStack.add(AboutRoute) },
-            onEnterDice = dropUnlessResumed {
-                generator.startDiceEntry()
-                backStack.add(DiceEntryRoute)
-            }.takeIf { options.mode == Mode.DICE },
-        ) { modifier ->
-            OptionsControls(
-                options,
-                wordLists,
-                onMode = generator::setMode,
-                onWordList = generator::setWordList,
-                onWordCount = generator::setWordCount,
-                onSeparator = generator::setSeparator,
-                onCapitalize = generator::setCapitalize,
-                onAppendDigit = generator::setAppendDigit,
-                onAppendSymbol = generator::setAppendSymbol,
-                modifier = modifier,
-            )
-        }
+            onAction = { action ->
+                when (action) {
+                    GeneratorAction.Regenerate -> generator.regenerate()
+                    is GeneratorAction.Copy -> copySensitive(action.passphrase)
+                    GeneratorAction.OpenWordLists -> openWordLists()
+                    GeneratorAction.OpenAbout -> openAbout()
+                    GeneratorAction.EnterDice -> enterDice()
+                }
+            },
+            diceMode = options.mode == Mode.DICE,
+        ) { modifier -> OptionsControls(options, wordLists, onChange = generator::change, modifier = modifier) }
     }
 }
 

@@ -20,7 +20,7 @@ struct WordListsTests {
     @Test func choosingEffShort1RerollsWithItsWordsAndFourDicePerWord() async throws {
         _ = try #require(await ready())
 
-        generator.setWordList(wordList: await loaded { !$0.isEmpty }[1].id)
+        generator.change(option: OptionChangeSetWordList(wordList: await loaded { !$0.isEmpty }[1].id))
 
         let ready = try #require(await ready { $0.strengthBits < 70 })
         let words = ready.passphrase.split(separator: " ").map(String.init)
@@ -31,7 +31,8 @@ struct WordListsTests {
     }
 
     @Test func wordListsShowEachEffWordListWithItsWordCountAndStrengthPerWord() async {
-        let rows = await loaded { !$0.isEmpty }.map { "\(WordListsView.name(of: $0)): \(WordListsView.details(of: $0))" }
+        let rows = await loaded { !$0.isEmpty }
+            .map { "\(WordListsView.name(of: $0)): \(WordListsView.details(of: $0))" }
 
         #expect(rows == [
             "EFF Large: 7,776 Words · 12.9 bits per Word",
@@ -48,7 +49,8 @@ struct WordListsTests {
         await DicewareApp.importFile(at: file, into: generator.library)
 
         let imported = try #require(await loaded { $0.count == 4 }.last)
-        #expect("\(WordListsView.name(of: imported)): \(WordListsView.details(of: imported))" == "Animals: 1,296 Words · 10.3 bits per Word")
+        #expect("\(WordListsView.name(of: imported)): \(WordListsView.details(of: imported))"
+            == "Animals: 1,296 Words · 10.3 bits per Word")
         let id = try #require(imported.id as? CustomWordListId)
 
         generator.library.rename(id: id, name: "Beasts")
@@ -60,7 +62,8 @@ struct WordListsTests {
 
     @Test func anInvalidFileIsRejectedNamingTheLine() async throws {
         let file = Self.temporary.appendingPathComponent("bad.txt")
-        try (0..<1296).map { $0 == 7 ? "ice cream" : "w\($0)" }.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+        try (0..<1296).map { $0 == 7 ? "ice cream" : "w\($0)" }.joined(separator: "\n")
+            .write(to: file, atomically: true, encoding: .utf8)
 
         await DicewareApp.importFile(at: file, into: generator.library)
 
@@ -82,7 +85,13 @@ struct WordListsTests {
     }
 
     @Test func anUpdatedEffWordListIsMarked() {
-        let info = WordListInfo(id: EffWordList.large.toKotlinEnum(), name: nil, wordCount: 7776, strengthPerWordBits: 12.92, updated: true)
+        let info = WordListInfo(
+            id: EffWordList.large.toKotlinEnum(),
+            name: nil,
+            wordCount: 7776,
+            strengthPerWordBits: 12.92,
+            updated: true
+        )
 
         #expect(WordListsView.details(of: info) == "7,776 Words · 12.9 bits per Word · Updated from eff.org")
     }
@@ -90,8 +99,10 @@ struct WordListsTests {
     @Test func aFailedEffCheckSaysWhyAndThatNothingChanged() {
         #expect(WordListsView.message(for: EffUpdateErrorRedirected.shared)
             == "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
-        #expect(WordListsView.message(for: EffUpdateErrorInvalid(wordList: .short2, error: ImportErrorWordHasWhitespace(line: 8)))
-            == "EFF Short #2 from eff.org is not a valid Word List. Not imported, line 8: the Word contains a space. Nothing was changed.")
+        #expect(WordListsView.message(
+            for: EffUpdateErrorInvalid(wordList: .short2, error: ImportErrorWordHasWhitespace(line: 8))
+        ) == "EFF Short #2 from eff.org is not a valid Word List. "
+            + "Not imported, line 8: the Word contains a space. Nothing was changed.")
     }
 
     @Test func importingAnEffWordListOrSkippingARollSaysSo() {
@@ -104,7 +115,9 @@ struct WordListsTests {
     @Test func customWordListsAreExcludedFromBackup() throws {
         let values = try wordListsDirectory.resourceValues(forKeys: [.isExcludedFromBackupKey])
         #expect(values.isExcludedFromBackup == true)
-        #expect(try URL(fileURLWithPath: DicewareApp.wordListsPath).resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup == true)
+        #expect(try URL(fileURLWithPath: DicewareApp.wordListsPath)
+            .resourceValues(forKeys: [.isExcludedFromBackupKey])
+            .isExcludedFromBackup == true)
     }
 
     /// The first Word Lists state matching `until`.

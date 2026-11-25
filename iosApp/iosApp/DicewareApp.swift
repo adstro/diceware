@@ -26,7 +26,9 @@ struct DicewareApp: App {
         let scoped = url.startAccessingSecurityScopedResource()
         defer {
             if scoped { url.stopAccessingSecurityScopedResource() }
-            if url.deletingLastPathComponent().lastPathComponent == "Inbox" { try? FileManager.default.removeItem(at: url) }
+            if url.deletingLastPathComponent().lastPathComponent == "Inbox" {
+                try? FileManager.default.removeItem(at: url)
+            }
         }
         try? await library.importFile(path: url.path, fileName: url.lastPathComponent)
     }
@@ -83,7 +85,12 @@ struct DicewareApp: App {
     private static var applicationSupport: URL {
         // The app's own container always has Application Support; failing to create it means a broken install.
         do {
-            return try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            return try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
         } catch {
             fatalError("Couldn't open Application Support: \(error)")
         }

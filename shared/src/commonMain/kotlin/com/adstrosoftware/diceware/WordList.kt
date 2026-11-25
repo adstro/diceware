@@ -45,17 +45,19 @@ internal fun isRoll(text: String): Boolean = text.isNotEmpty() && text.all { it 
 
 /** What every [WordList.resolve] checks first: [roll] is [dicePerRoll] dice, each 1–6. */
 internal fun requireRoll(roll: List<Int>, dicePerRoll: Int) =
-    require(roll.size == dicePerRoll && roll.all { it in 1..6 }) { "A Roll needs $dicePerRoll dice, each 1-6: $roll" }
+    require(roll.size == dicePerRoll && roll.all { it in 1..DIE_FACES }) {
+        "A Roll needs $dicePerRoll dice, each 1-6: $roll"
+    }
 
 /** 6ⁿ: how many Rolls there are of [n] dice, and so how many Words a Word List with them has. */
 internal fun pow6(n: Int): Long {
     var result = 1L
-    repeat(n) { result *= 6 }
+    repeat(n) { result *= DIE_FACES }
     return result
 }
 
 /** The Strength one Roll of [dicePerRoll] dice adds: log₂ of its 6ⁿ equally likely outcomes. */
-internal fun bitsPerRoll(dicePerRoll: Int): Double = dicePerRoll * log2(6.0)
+internal fun bitsPerRoll(dicePerRoll: Int): Double = dicePerRoll * log2(DIE_FACES.toDouble())
 
 /** Every Roll of [dice] dice in order, 11…1 to 66…6, counting up from the last like an odometer. */
 internal fun rollsInOrder(dice: Int): Sequence<List<Int>> = sequence {
@@ -63,7 +65,7 @@ internal fun rollsInOrder(dice: Int): Sequence<List<Int>> = sequence {
     while (true) {
         yield(roll.toList())
         var i = dice - 1
-        while (i >= 0 && roll[i] == 6) roll[i--] = 1
+        while (i >= 0 && roll[i] == DIE_FACES) roll[i--] = 1
         if (i < 0) break
         roll[i]++
     }
