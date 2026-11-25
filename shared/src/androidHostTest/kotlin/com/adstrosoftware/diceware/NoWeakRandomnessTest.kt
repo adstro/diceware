@@ -18,7 +18,11 @@ class NoWeakRandomnessTest {
         assertTrue(sources.any { it.name == "Dice.kt" }, "Guard scanned nothing: ${File("src").absolutePath}")
 
         val offenders = sources.asSequence()
-            .flatMap { file -> file.readLines().mapIndexedNotNull { i, line -> "$file:${i + 1}".takeIf { banned.containsMatchIn(line) } } }
+            .flatMap { file ->
+                file.readLines().mapIndexedNotNull { i, line ->
+                    "$file:${i + 1}".takeIf { banned.containsMatchIn(line) }
+                }
+            }
             .toList()
 
         assertEquals(emptyList(), offenders)

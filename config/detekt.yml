@@ -1,26 +1,7 @@
 # Guards against known Kotlin and Compose antipatterns. Run with `./gradlew detekt`.
-# Line length is style, not a bug. Bare numbers are the domain's own (6 faces, 2 dice per digit) and read clearer inline.
-style:
-  MaxLineLength:
-    active: false
-  MagicNumber:
-    active: false
-  # Previews are called by Android Studio's preview tooling, never by the app.
-  UnusedPrivateFunction:
-    ignoreAnnotated: ['Preview']
-
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
-
-complexity:
-  LongParameterList:
-    ignoreAnnotated: ['Composable']
-  # A flat `when` mapping each case to a value is a table, not branching logic.
-  CyclomaticComplexMethod:
-    ignoreSimpleWhenEntries: true
-  TooManyFunctions:
-    ignorePrivate: true
 
 exceptions:
   # Failures become typed screen state on purpose, and the app never logs (privacy),

@@ -72,7 +72,10 @@ fun AboutScreen(onNavigateUp: () -> Unit, modifier: Modifier = Modifier) {
                 title = { Text(stringResource(R.string.about)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.navigate_up))
+                        Icon(
+                            painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.navigate_up),
+                        )
                     }
                 },
             )
@@ -115,6 +118,6 @@ private fun Section(@StringRes title: Int, @StringRes body: Int) {
 @Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)
 @Preview(name = "Large font", device = "spec:width=411dp,height=891dp", fontScale = 2f, showBackground = true)
 @Composable
-private fun AboutScreenPreview() {
+internal fun AboutScreenPreview() {
     DicewareTheme { AboutScreen(onNavigateUp = {}) }
 }

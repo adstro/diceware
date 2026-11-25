@@ -4,4 +4,4 @@ builtin = en-GB_to_en-US
 # Splits camelCase and ALL_CAPS so identifiers like setCapitalise and MAX_COLOUR are checked word by word.
 regex = [A-Z]?[a-z'’]+|[A-Z]{2,}(?![a-z])
 # The EFF Word Lists are third-party data whose Words must match the published lists exactly.
-skip = ./wordlists,*/build
+skip = *wordlists/*

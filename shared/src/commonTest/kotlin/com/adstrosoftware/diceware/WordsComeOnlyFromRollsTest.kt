@@ -50,7 +50,7 @@ class WordsComeOnlyFromRollsTest {
         val wordList = RecordingWordList(5)
         val generator = generator(wordList, ScriptedRandom())
         generator.state.first { it != GeneratorState.Loading }
-        generator.setMode(Mode.DICE)
+        generator.change(OptionChange.SetMode(Mode.DICE))
         wordList.rolls.clear()
 
         faces.forEach(generator::enterDie)
@@ -65,9 +65,18 @@ class WordsComeOnlyFromRollsTest {
     private fun TestScope.generator(wordList: WordList, random: RandomBytes): Generator {
         val fileSystem = FakeFileSystem()
         return Generator(
-            WordListLibrary({ EffWordList.entries.associateWith { wordList } }, fileSystem, "/lists".toPath(), backgroundScope, StandardTestDispatcher(testScheduler)),
+            WordListLibrary(
+                { EffWordList.entries.associateWith { wordList } },
+                fileSystem,
+                "/lists".toPath(),
+                backgroundScope,
+                StandardTestDispatcher(testScheduler),
+            ),
             random,
-            PreferenceDataStoreFactory.create(OkioStorage(fileSystem, PreferencesSerializer) { "/settings.preferences_pb".toPath() }, scope = backgroundScope),
+            PreferenceDataStoreFactory.create(
+                OkioStorage(fileSystem, PreferencesSerializer) { "/settings.preferences_pb".toPath() },
+                scope = backgroundScope,
+            ),
             backgroundScope,
         )
     }

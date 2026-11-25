@@ -70,3 +70,16 @@ internal fun PassphraseOptions.writeTo(preferences: androidx.datastore.preferenc
     }
     preferences[modeKey] = mode.name
 }
+
+/** One change the user makes to the [PassphraseOptions]; each is saved and rolls a fresh Passphrase. */
+sealed interface OptionChange {
+    data class SetMode(val mode: Mode) : OptionChange
+    data class SetWordList(val wordList: WordListId) : OptionChange
+
+    /** Clamped to [PassphraseOptions.WORD_COUNTS]. */
+    data class SetWordCount(val count: Int) : OptionChange
+    data class SetSeparator(val separator: Separator) : OptionChange
+    data class SetCapitalize(val on: Boolean) : OptionChange
+    data class SetAppendDigit(val on: Boolean) : OptionChange
+    data class SetAppendSymbol(val on: Boolean) : OptionChange
+}

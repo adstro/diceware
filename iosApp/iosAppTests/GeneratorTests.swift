@@ -30,7 +30,7 @@ struct GeneratorTests {
     @Test func fewerWordsLowerTheStrengthBelowTheWarning() async throws {
         #expect(try #require(await ready()).isWeak == false)
 
-        generator.setWordCount(count: 4)
+        generator.change(option: OptionChangeSetWordCount(count: 4))
 
         let ready = try #require(await ready())
         #expect(ready.passphrase.split(separator: " ").count == 4)
@@ -42,10 +42,10 @@ struct GeneratorTests {
     @Test func separatorAndTogglesShapeThePassphrase() async throws {
         _ = try #require(await ready())
 
-        generator.setSeparator(separator: .hyphen)
-        generator.setCapitalize(on: true)
-        generator.setAppendDigit(on: true)
-        generator.setAppendSymbol(on: true)
+        generator.change(option: OptionChangeSetSeparator(separator: .hyphen))
+        generator.change(option: OptionChangeSetCapitalize(on: true))
+        generator.change(option: OptionChangeSetAppendDigit(on: true))
+        generator.change(option: OptionChangeSetAppendSymbol(on: true))
 
         let passphrase = try #require(await ready()).passphrase
         #expect(passphrase.wholeMatch(of: /([A-Z][a-z-]*-){5}[A-Z][a-z-]*[0-9][!@#$%&*\-_+=?]/) != nil)

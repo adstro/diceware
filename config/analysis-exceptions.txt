@@ -1,24 +1,13 @@
 # Approved static-analysis bypasses: `path | id | count | reason`. scripts/analysis-exceptions.py fails CI on any
 # bypass missing here and on any line here that the code no longer has. Add a line only after /interrogate
 # and the project owner approve the bypass (AGENTS.md, "Static analysis").
-.codespellrc | codespell:skip:./wordlists | 1 | The EFF Word Lists are third-party data whose Words must match the published lists exactly.
-.codespellrc | codespell:skip:*/build | 1 | Generated build output, not source.
-androidApp/build.gradle.kts | android-lint:disable:AndroidGradlePluginVersion | 1 | Tracks the latest AGP release, so CI would fail on a release with no code change.
-androidApp/build.gradle.kts | android-lint:disable:GradleDependency | 1 | Tracks the latest library releases, so CI would fail on a release with no code change.
-androidApp/build.gradle.kts | android-lint:disable:NewerVersionAvailable | 1 | Tracks the latest library releases, so CI would fail on a release with no code change.
-androidApp/build.gradle.kts | android-lint:disable:OldTargetApi | 1 | Tracks the latest Android release, so CI would fail on a release with no code change.
-config/detekt.yml | detekt:complexity.CyclomaticComplexMethod.ignoreSimpleWhenEntries=true | 1 | A flat `when` mapping each error to its message is a table, not branching logic.
-config/detekt.yml | detekt:complexity.LongParameterList.ignoreAnnotated=['Composable'] | 1 | Stateless screens take one callback per user action, by Compose convention.
-config/detekt.yml | detekt:complexity.TooManyFunctions.ignorePrivate=true | 1 | Private helpers split long functions up; counting them would penalize that.
-config/detekt.yml | detekt:exceptions.SwallowedException.active=false | 1 | Failures become typed screen state on purpose and the app never logs (privacy).
-config/detekt.yml | detekt:naming.FunctionNaming.ignoreAnnotated=['Composable'] | 1 | Composables are named in PascalCase by Compose convention.
-config/detekt.yml | detekt:style.MagicNumber.active=false | 1 | The domain's own numbers (6 faces, 2 dice per digit) read clearer inline.
-config/detekt.yml | detekt:style.MaxLineLength.active=false | 1 | Line length is style, not a bug.
-config/detekt.yml | detekt:style.UnusedPrivateFunction.ignoreAnnotated=['Preview'] | 1 | Previews are called by Android Studio's preview tooling, never by the app.
-iosApp/.swiftlint.yml | swiftlint:cyclomatic_complexity.ignores_case_statements | 1 | A flat `switch` mapping each error to its message is a table, not branching logic.
-iosApp/.swiftlint.yml | swiftlint:disabled_rules:line_length | 1 | Line length is style, not a bug.
+.codespellrc | codespell:skip:*wordlists/* | 1 | The EFF Word Lists are third-party data whose Words must match the published lists exactly.
+androidApp/src/main/kotlin/com/adstrosoftware/diceware/WordListsScreen.kt | suppress:CyclomaticComplexMethod | 1 | importErrorMessage is one row per ImportError: a lookup table, not branching logic.
+config/detekt.yml | detekt:exceptions.SwallowedException.active=false | 1 | ON HOLD (item 10): decided with the logging design.
+config/detekt.yml | detekt:naming.FunctionNaming.ignoreAnnotated=['Composable'] | 1 | Compose requires PascalCase composables, and its own ComposableNaming check enforces it.
+iosApp/iosApp/WordListsView.swift | swiftlint-disable:cyclomatic_complexity | 1 | message(for:) is one case per ImportError: a lookup table, not branching logic.
 shared/src/androidHostTest/kotlin/com/adstrosoftware/diceware/LargeWordListMemoryTest.kt | suppress:InjectDispatcher | 1 | The memory test measures a real import on real threads.
 shared/src/androidMain/kotlin/com/adstrosoftware/diceware/SecureRandomBytes.android.kt | suppress:TooGenericExceptionCaught | 1 | Any failure of the secure random source must become "randomness unavailable", never a crash.
 shared/src/commonMain/kotlin/com/adstrosoftware/diceware/EffUpdate.kt | suppress:TooGenericExceptionCaught | 1 | Each HTTP engine throws its own types for network failures, and every one of them means Offline.
 shared/src/commonMain/kotlin/com/adstrosoftware/diceware/WordListLibrary.kt | suppress:TooGenericExceptionCaught | 1 | Opening a shared file also throws security and argument errors on Android; each must become Unreadable, not a crash.
-shared/src/commonMain/kotlin/com/adstrosoftware/diceware/WordListLibrary.kt | suppress:TooManyFunctions | 1 | One public function per Word Lists action; splitting it would undo the type-safe Word List lookup.
+shared/src/commonMain/kotlin/com/adstrosoftware/diceware/WordListLibrary.kt | suppress:TooManyFunctions | 1 | One public function per Word Lists action: the single front door for that screen.

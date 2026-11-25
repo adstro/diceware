@@ -13,7 +13,8 @@ enum PassphraseClipboard {
     }
 }
 
-/// Hides the app behind a plain cover whenever the scene is not active, so the app switcher snapshot never shows a Passphrase.
+/// Hides the app behind a plain cover whenever the scene is not active, so the app switcher snapshot never shows a
+/// Passphrase.
 struct PrivacyCover: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
 

@@ -46,10 +46,16 @@ struct WordListsView: View {
             guard case .success(let url) = result else { return }
             Task { await DicewareApp.importFile(at: url, into: library) }
         }
-        .alert(resultMessage ?? "", isPresented: Binding(get: { resultMessage != nil }, set: { _ in library.dismissImportResult() })) {
+        .alert(
+            resultMessage ?? "",
+            isPresented: Binding(get: { resultMessage != nil }, set: { _ in library.dismissImportResult() })
+        ) {
             Button("OK") { library.dismissImportResult() }
         }
-        .alert(effMessage ?? "", isPresented: Binding(get: { effMessage != nil }, set: { _ in library.dismissEffUpdate() })) {
+        .alert(
+            effMessage ?? "",
+            isPresented: Binding(get: { effMessage != nil }, set: { _ in library.dismissEffUpdate() })
+        ) {
             Button("OK") { library.dismissEffUpdate() }
         }
         .alert("Update EFF Word Lists?", isPresented: Binding(get: { effChanges != nil }, set: { _ in })) {
@@ -143,9 +149,15 @@ struct WordListsView: View {
         func sample(_ words: [String], _ total: Int64) -> String {
             (total > words.count ? words + ["…"] : words).joined(separator: ", ")
         }
-        var lines = [String(localized: "\(name): \(change.wordsAdded.formatted()) Words added, \(change.wordsRemoved.formatted()) removed")]
-        if !change.sampleAdded.isEmpty { lines.append(String(localized: "Added: \(sample(change.sampleAdded, change.wordsAdded))")) }
-        if !change.sampleRemoved.isEmpty { lines.append(String(localized: "Removed: \(sample(change.sampleRemoved, change.wordsRemoved))")) }
+        var lines = [String(localized: """
+            \(name): \(change.wordsAdded.formatted()) Words added, \(change.wordsRemoved.formatted()) removed
+            """)]
+        if !change.sampleAdded.isEmpty {
+            lines.append(String(localized: "Added: \(sample(change.sampleAdded, change.wordsAdded))"))
+        }
+        if !change.sampleRemoved.isEmpty {
+            lines.append(String(localized: "Removed: \(sample(change.sampleRemoved, change.wordsRemoved))"))
+        }
         return lines
     }
 
@@ -159,9 +171,14 @@ struct WordListsView: View {
         case .tooLarge:
             String(localized: "The download from eff.org was over 1 MB, so it was refused. Nothing was changed.")
         case .redirected:
-            String(localized: "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
+            String(localized: """
+                eff.org redirected the download to another site, so it was refused. Nothing was changed.
+                """)
         case .invalid(let detail):
-            String(localized: "\(name(of: detail.wordList)) from eff.org is not a valid Word List. \(message(for: detail.error)) Nothing was changed.")
+            String(localized: """
+                \(name(of: detail.wordList)) from eff.org is not a valid Word List. \(message(for: detail.error)) \
+                Nothing was changed.
+                """)
         case .storageFailed:
             String(localized: "There is not enough storage space for the update. Nothing was changed.")
         }
@@ -182,29 +199,43 @@ struct WordListsView: View {
     }
 
     static func details(of info: WordListInfo) -> String {
-        let details = String(localized: "\(info.wordCount.formatted()) Words · \(info.strengthPerWordBits, specifier: "%.1f") bits per Word")
+        let details = String(localized: """
+            \(info.wordCount.formatted()) Words · \(info.strengthPerWordBits, specifier: "%.1f") bits per Word
+            """)
         return info.updated ? String(localized: "\(details) · Updated from eff.org") : details
     }
 
     /// Why an import was rejected, naming the offending line.
-    static func message(for error: ImportError) -> String {
+    /// One case per ImportError: a lookup table, which the complexity count mistakes for branching.
+    static func message(for error: ImportError) -> String { // swiftlint:disable:this cyclomatic_complexity
         switch onEnum(of: error) {
         case .wrongWordCount(let detail):
-            String(localized: "Not imported: the file has \(detail.wordCount.formatted()) Words, but a Word List needs exactly 6ⁿ Words (1,296, 7,776, 46,656, …).")
+            String(localized: """
+                Not imported: the file has \(detail.wordCount.formatted()) Words, but a Word List needs exactly 6ⁿ \
+                Words (1,296, 7,776, 46,656, …).
+                """)
         case .duplicateWord(let detail):
-            String(localized: "Not imported: line \(detail.line.formatted()), “\(detail.word)”, repeats the Word on line \(detail.firstLine.formatted()) (ignoring case).")
+            String(localized: """
+                Not imported: line \(detail.line.formatted()), “\(detail.word)”, repeats the Word on line \
+                \(detail.firstLine.formatted()) (ignoring case).
+                """)
         case .wordHasWhitespace(let detail):
             String(localized: "Not imported, line \(detail.line.formatted()): the Word contains a space.")
         case .invalidRoll(let detail):
             String(localized: "Not imported, line \(detail.line.formatted()): the Roll must be digits 1 to 6.")
         case .mixedRollLength(let detail):
-            String(localized: "Not imported, line \(detail.line.formatted()): the Roll has a different number of dice from line 1.")
+            String(localized: """
+                Not imported, line \(detail.line.formatted()): the Roll has a different number of dice from line 1.
+                """)
         case .missingRoll(let detail):
             String(localized: "Not imported, line \(detail.line.formatted()): there is no Roll.")
         case .rollNotFound(let detail):
             String(localized: "Not imported: no line has the Roll \(detail.roll).")
         case .repeatedRoll(let detail):
-            String(localized: "Not imported, line \(detail.line.formatted()): the Roll repeats the Roll on line \(detail.firstLine.formatted()).")
+            String(localized: """
+                Not imported, line \(detail.line.formatted()): the Roll repeats the Roll on line \
+                \(detail.firstLine.formatted()).
+                """)
         case .lineTooLong(let detail):
             String(localized: "Not imported: line \(detail.line.formatted()) is too long to be a Word.")
         case .notText(let detail):

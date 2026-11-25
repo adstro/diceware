@@ -14,13 +14,23 @@ internal sealed interface IndexEntry {
 
     data class Custom(override val sha256: String, val name: String, override val dicePerRoll: Int) : IndexEntry
 
-    data class EffCopy(override val sha256: String, override val dicePerRoll: Int, val wordList: EffWordList) : IndexEntry
+    data class EffCopy(
+        override val sha256: String,
+        override val dicePerRoll: Int,
+        val wordList: EffWordList,
+    ) : IndexEntry
 }
 
 /** An [IndexEntry] as `index.json` has always stored it: [eff] is set only for an EFF Word List copy. */
 @Serializable
-private data class SavedEntry(val sha256: String, val name: String, val dicePerRoll: Int, val eff: EffWordList? = null) {
-    fun toEntry(): IndexEntry = eff?.let { IndexEntry.EffCopy(sha256, dicePerRoll, it) } ?: IndexEntry.Custom(sha256, name, dicePerRoll)
+private data class SavedEntry(
+    val sha256: String,
+    val name: String,
+    val dicePerRoll: Int,
+    val eff: EffWordList? = null,
+) {
+    fun toEntry(): IndexEntry =
+        eff?.let { IndexEntry.EffCopy(sha256, dicePerRoll, it) } ?: IndexEntry.Custom(sha256, name, dicePerRoll)
 }
 
 private fun IndexEntry.toSaved() = when (this) {
@@ -75,14 +85,20 @@ internal class WordListIndex(val fileSystem: FileSystem, val directory: Path) {
 
     /** The saved index is app-private but still read defensively: a damaged index lists no Custom Word Lists. */
     private fun read(): List<IndexEntry> = runCatching {
-        Json.decodeFromString<List<SavedEntry>>(fileSystem.read(directory / INDEX_FILE) { readUtf8() }).map { it.toEntry() }
-            .filter { entry -> WORD_LIST_FILES.all { fileSystem.exists(directory / wordListFileName(entry.sha256, it)) } }
+        Json.decodeFromString<List<SavedEntry>>(fileSystem.read(directory / INDEX_FILE) { readUtf8() })
+            .map { it.toEntry() }
+            .filter { entry ->
+                WORD_LIST_FILES.all { fileSystem.exists(directory / wordListFileName(entry.sha256, it)) }
+            }
     }.getOrDefault(emptyList())
 
     /** Removes Word List files a deletion or interrupted import left behind. */
     private fun deleteFilesNotIn(list: List<IndexEntry>) {
-        val keep = list.flatMap { entry -> WORD_LIST_FILES.map { wordListFileName(entry.sha256, it) } }.toSet() + INDEX_FILE
+        val keep = list.flatMap { entry -> WORD_LIST_FILES.map { wordListFileName(entry.sha256, it) } }.toSet() +
+            INDEX_FILE
         // Best effort: whatever can't be deleted now is retried at the next launch.
-        fileSystem.list(directory).filter { it.name !in keep && it.name != STAGING_DIR && it.name != EFF_STAGING_DIR }.forEach { runCatching { fileSystem.delete(it) } }
+        fileSystem.list(directory)
+            .filter { it.name !in keep && it.name != STAGING_DIR && it.name != EFF_STAGING_DIR }
+            .forEach { runCatching { fileSystem.delete(it) } }
     }
 }

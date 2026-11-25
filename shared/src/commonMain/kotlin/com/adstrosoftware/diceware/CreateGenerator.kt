@@ -30,7 +30,12 @@ fun createGenerator(
 ): Generator = Generator(
     librariesByPath.getOrPut(wordListsPath) {
         // The library outlives any one screen's scope: it is shared by every Generator in the process.
-        WordListLibrary({ EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } }, FileSystem.SYSTEM, wordListsPath.toPath(), CoroutineScope(SupervisorJob()))
+        WordListLibrary(
+            { EffWordList.entries.associateWith { WordList.parse(readBundled(it)) } },
+            FileSystem.SYSTEM,
+            wordListsPath.toPath(),
+            CoroutineScope(SupervisorJob()),
+        )
     },
     secureRandomBytes(),
     settingsByPath.getOrPut(settingsPath) { PreferenceDataStoreFactory.createWithPath { settingsPath.toPath() } },

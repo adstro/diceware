@@ -18,8 +18,6 @@ android {
     androidResources { generateLocaleConfig = true }
     lint {
         warningsAsErrors = true
-        // These track the latest released versions, so they change without any change to the code.
-        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion", "OldTargetApi")
     }
     // Compose UI 1.13 needs compileSdk 37.1.
     compileSdk { version = release(37) { minorApiLevel = 1 } }

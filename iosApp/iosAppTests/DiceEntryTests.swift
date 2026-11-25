@@ -15,7 +15,7 @@ struct DiceEntryTests {
     @Test func diceModeBuildsThePassphraseFromEnteredDiceOneWordPerRoll() async throws {
         for await state in generator.state where !(state is GeneratorStateLoading) { break }
 
-        generator.setMode(mode: .dice)
+        generator.change(option: OptionChangeSetMode(mode: .dice))
         #expect(generator.state.value is GeneratorStateAwaitingDice)
         // EFF Large: 5 dice per Roll. 11111 is "abacus", 66666 is "zoom".
         #expect(DiceEntryView.prompt(for: generator.diceEntry.value) == "Word 1 of 6: roll 5 dice")

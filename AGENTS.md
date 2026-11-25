@@ -6,7 +6,7 @@ A Word is ALWAYS chosen by a Roll of dice (each die 1–6) resolved against the 
 
 ## American English (en-US)
 
-Write everything in American English: code identifiers, UI strings, comments, tests, docs, commit messages and issues ("capitalize", "canceled", "favor", "color"). en-US is the declared default language on both platforms. CI runs `codespell` with the British-to-American dictionary (config in `.codespellrc`), so run `pipx run codespell==2.4.3` from the repo root before committing. The EFF Word Lists in `wordlists/` are third-party data and are never respelled.
+Write everything in American English: code identifiers, UI strings, comments, tests, docs, commit messages and issues ("capitalize", "canceled", "favor", "color"). en-US is the declared default language on both platforms. CI runs `codespell` with the British-to-American dictionary (config in `.codespellrc`), so run `git ls-files -z | xargs -0 pipx run codespell==2.4.3` from the repo root before committing (tracked files only, as CI checks them). The EFF Word Lists in `wordlists/` are third-party data and are never respelled.
 
 ## Static analysis
 

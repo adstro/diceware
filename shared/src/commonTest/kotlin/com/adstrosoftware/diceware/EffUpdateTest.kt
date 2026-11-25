@@ -59,7 +59,15 @@ class EffUpdateTest {
 
         assertEquals(
             EffUpdateState.UpdateAvailable(
-                listOf(EffWordListChange(EffWordList.SHORT_1, 2, 2, listOf("kiwi", "lime"), listOf("short_11112", "short_11113"))),
+                listOf(
+                    EffWordListChange(
+                        EffWordList.SHORT_1,
+                        2,
+                        2,
+                        listOf("kiwi", "lime"),
+                        listOf("short_11112", "short_11113"),
+                    ),
+                ),
             ),
             library.effUpdateState.value,
         )
@@ -119,7 +127,9 @@ class EffUpdateTest {
         served[EffWordList.LARGE] = bundledText(EffWordList.LARGE).replace("\tlarge1111\n", "\tkiwi\n")
         served[EffWordList.SHORT_2] = bundledText(EffWordList.SHORT_2).replace("\tshort_21112\n", "\tshort_21111\n")
 
-        assertFailsAndChangesNothing(EffUpdateError.Invalid(EffWordList.SHORT_2, ImportError.DuplicateWord(2, "short_21111", 1)))
+        assertFailsAndChangesNothing(
+            EffUpdateError.Invalid(EffWordList.SHORT_2, ImportError.DuplicateWord(2, "short_21111", 1)),
+        )
     }
 
     @Test
@@ -127,7 +137,9 @@ class EffUpdateTest {
         handler = { respond(ByteArray(MAX_DOWNLOAD_BYTES.toInt() + 1) { 'a'.code.toByte() }, HttpStatusCode.OK) }
         assertFailsAndChangesNothing(EffUpdateError.TooLarge)
 
-        handler = { respond(ByteReadChannel(ByteArray(MAX_DOWNLOAD_BYTES.toInt() + 1) { 'a'.code.toByte() }), HttpStatusCode.OK) }
+        handler = {
+            respond(ByteReadChannel(ByteArray(MAX_DOWNLOAD_BYTES.toInt() + 1) { 'a'.code.toByte() }), HttpStatusCode.OK)
+        }
         assertFailsAndChangesNothing(EffUpdateError.TooLarge)
     }
 
@@ -152,8 +164,11 @@ class EffUpdateTest {
     fun aRedirectWithinWwwEffOrgIsFollowed() = runTest {
         handler = { request ->
             val path = request.url.encodedPath
-            if (path.startsWith("/moved/")) respond(served.getValue(EffWordList.entries.first { path.endsWith(it.fileName) }), HttpStatusCode.OK)
-            else respond("", HttpStatusCode.Found, headersOf(HttpHeaders.Location, path.replace("/files/", "/moved/")))
+            if (path.startsWith("/moved/")) {
+                respond(served.getValue(EffWordList.entries.first { path.endsWith(it.fileName) }), HttpStatusCode.OK)
+            } else {
+                respond("", HttpStatusCode.Found, headersOf(HttpHeaders.Location, path.replace("/files/", "/moved/")))
+            }
         }
         val library = library()
 
@@ -195,7 +210,8 @@ class EffUpdateTest {
     private suspend fun WordListLibrary.loaded() = wordLists.first { it.isNotEmpty() }
 
     /** Each test EFF list differs by its prefix: `large1111`, `short_11111`, … in Diceware format. */
-    private fun bundledText(list: EffWordList) = rolls(4).joinToString("\n", postfix = "\n") { "$it\t${list.name.lowercase()}$it" }
+    private fun bundledText(list: EffWordList) =
+        rolls(4).joinToString("\n", postfix = "\n") { "$it\t${list.name.lowercase()}$it" }
 
     private fun rolls(dice: Int): List<String> =
         if (dice == 0) listOf("") else rolls(dice - 1).flatMap { prefix -> (1..6).map { prefix + it } }

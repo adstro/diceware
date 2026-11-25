@@ -48,7 +48,8 @@ class ImportWordListTest {
     /** The library outlives each test's activity, like the app process does, so remove what a test imported. */
     @After
     fun deleteCustomWordLists() {
-        library.wordLists.value.mapNotNull { it.id as? CustomWordListId }.forEach { id -> scenario.onActivity { library.delete(id) } }
+        library.wordLists.value.mapNotNull { it.id as? CustomWordListId }
+            .forEach { id -> scenario.onActivity { library.delete(id) } }
         rule.waitUntil { library.wordLists.value.size == 3 }
         scenario.close()
     }
@@ -80,7 +81,10 @@ class ImportWordListTest {
     @Test
     fun aFileUriFromAnotherAppIsNeverRead() {
         // A file:// URI could name this app's own private files.
-        launch(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.fromFile(app.filesDir.resolve("diceware.preferences_pb")), "text/plain"))
+        launch(
+            Intent(Intent.ACTION_VIEW)
+                .setDataAndType(Uri.fromFile(app.filesDir.resolve("diceware.preferences_pb")), "text/plain"),
+        )
 
         rule.waitForIdle()
         assertEquals(ImportState.Idle, library.importState.value)

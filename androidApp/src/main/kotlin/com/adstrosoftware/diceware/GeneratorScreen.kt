@@ -72,17 +72,27 @@ fun DicewareTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = colors, content = content)
 }
 
+/** What the user does on the Generator screen; the caller forwards each to the core or to navigation. */
+sealed interface GeneratorAction {
+    data object Regenerate : GeneratorAction
+    data class Copy(val passphrase: String) : GeneratorAction
+    data object OpenWordLists : GeneratorAction
+    data object OpenAbout : GeneratorAction
+    data object EnterDice : GeneratorAction
+}
+
 /**
  * Renders the core's Generator state; all logic lives in the shared core. [options] holds the setting controls,
  * beside the Passphrase on an expanded-width window and below it otherwise.
- * In Dice Mode [onEnterDice] is set and replaces regenerating.
+ * In [diceMode], entering dice replaces regenerating.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratorScreen(
-    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onWordLists: () -> Unit, onAbout: () -> Unit,
+    state: GeneratorState,
+    onAction: (GeneratorAction) -> Unit,
     modifier: Modifier = Modifier,
-    onEnterDice: (() -> Unit)? = null,
+    diceMode: Boolean = false,
     options: @Composable (Modifier) -> Unit = {},
 ) {
     // One movable instance, so the controls keep their state when the window crosses the expanded-width breakpoint.
@@ -91,7 +101,12 @@ fun GeneratorScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.app_name)) }, actions = { OverflowMenu(onWordLists, onAbout) })
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    OverflowMenu({ onAction(GeneratorAction.OpenWordLists) }, { onAction(GeneratorAction.OpenAbout) })
+                },
+            )
         },
     ) { innerPadding ->
         // Saved settings arrive within milliseconds; showing controls before then would let them be overwritten.
@@ -107,7 +122,7 @@ fun GeneratorScreen(
                     Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
-                ) { PassphrasePane(state, onRegenerate, onCopy, onEnterDice, readable) }
+                ) { PassphrasePane(state, diceMode, onAction, readable) }
                 Column(
                     Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -120,7 +135,7 @@ fun GeneratorScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             ) {
-                PassphrasePane(state, onRegenerate, onCopy, onEnterDice, readable)
+                PassphrasePane(state, diceMode, onAction, readable)
                 movableOptions(readable)
             }
         }
@@ -139,15 +154,23 @@ private fun isWidthExpanded(): Boolean {
 /** The Passphrase (or why there is none), its Strength and the actions on it. */
 @Composable
 private fun PassphrasePane(
-    state: GeneratorState, onRegenerate: () -> Unit, onCopy: (String) -> Unit, onEnterDice: (() -> Unit)?, modifier: Modifier = Modifier,
+    state: GeneratorState, diceMode: Boolean, onAction: (GeneratorAction) -> Unit, modifier: Modifier = Modifier,
 ) {
     val fill = Modifier.fillMaxWidth()
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
         when (state) {
             GeneratorState.Loading -> {}
             is GeneratorState.Ready -> {
                 Passphrase(state, fill)
-                Text(stringResource(R.string.strength_bits, state.strengthBits), textAlign = TextAlign.Center, modifier = fill)
+                Text(
+                    stringResource(R.string.strength_bits, state.strengthBits),
+                    textAlign = TextAlign.Center,
+                    modifier = fill,
+                )
                 if (state.isWeak) {
                     Text(
                         stringResource(R.string.weak_warning),
@@ -169,13 +192,15 @@ private fun PassphrasePane(
                 modifier = fill,
             )
         }
-        if (onEnterDice != null) {
-            Button(onClick = onEnterDice) { Text(stringResource(R.string.enter_dice)) }
+        if (diceMode) {
+            Button(onClick = { onAction(GeneratorAction.EnterDice) }) { Text(stringResource(R.string.enter_dice)) }
         } else {
-            Button(onClick = onRegenerate) { Text(stringResource(R.string.regenerate)) }
+            Button(onClick = { onAction(GeneratorAction.Regenerate) }) { Text(stringResource(R.string.regenerate)) }
         }
         if (state is GeneratorState.Ready) {
-            OutlinedButton(onClick = { onCopy(state.passphrase) }) { Text(stringResource(R.string.copy)) }
+            OutlinedButton(onClick = { onAction(GeneratorAction.Copy(state.passphrase)) }) {
+                Text(stringResource(R.string.copy))
+            }
         }
     }
 }
@@ -194,7 +219,11 @@ private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier = Modifie
     // Changing text in a polite live region is how Compose announces; the count lets the same text be announced again.
     var spellOuts by remember(state.passphrase) { mutableIntStateOf(0) }
     val spellOut = listOf(CustomAccessibilityAction(stringResource(R.string.spell_out)) { spellOuts++; true })
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
         FlowRow(
             Modifier.fillMaxWidth().testTag(PASSPHRASE_TAG).semantics { passphraseText = state.passphrase },
             horizontalArrangement = Arrangement.Center,
@@ -214,7 +243,11 @@ private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier = Modifie
         Box(
             Modifier.size(1.dp).testTag(SPELLED_OUT_TAG).semantics {
                 liveRegion = LiveRegionMode.Polite
-                contentDescription = if (spellOuts == 0) "" else spelledOut(state.passphrase, resources) + " ".repeat((spellOuts + 1) % 2)
+                contentDescription = if (spellOuts == 0) {
+                    ""
+                } else {
+                    spelledOut(state.passphrase, resources) + " ".repeat((spellOuts + 1) % 2)
+                }
             },
         )
     }
@@ -249,14 +282,22 @@ private fun spelledOut(passphrase: String, resources: Resources): String = passp
 @Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)
 @Preview(name = "Tablet", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true)
 @Composable
-private fun GeneratorScreenPreview() {
+internal fun GeneratorScreenPreview() {
     DicewareTheme {
         GeneratorScreen(
-            GeneratorState.Ready("abacus zoom kettle lilac boned tribute", 77.5, listOf("abacus", "zoom", "kettle", "lilac", "boned", "tribute")),
-            onRegenerate = {},
-            onCopy = {},
-            onWordLists = {},
-            onAbout = {},
-        ) { OptionsControls(PassphraseOptions(), listOf(WordListInfo(EffWordList.LARGE, null, 7776, 12.92)), {}, {}, {}, {}, {}, {}, {}, it) }
+            GeneratorState.Ready(
+                "abacus zoom kettle lilac boned tribute",
+                strengthBits = 77.5,
+                listOf("abacus", "zoom", "kettle", "lilac", "boned", "tribute"),
+            ),
+            onAction = {},
+        ) {
+            OptionsControls(
+                PassphraseOptions(),
+                listOf(WordListInfo(EffWordList.LARGE, null, wordCount = 7776, strengthPerWordBits = 12.92)),
+                {},
+                it,
+            )
+        }
     }
 }

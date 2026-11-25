@@ -52,6 +52,20 @@ val wordListNames = mapOf(
 @ReadOnlyComposable
 fun nameOf(info: WordListInfo): String = info.name ?: stringResource(wordListNames.getValue(info.id as EffWordList))
 
+/** What the user does on the Word Lists screen; the caller forwards each to the core or to navigation. */
+sealed interface WordListsAction {
+    data object NavigateUp : WordListsAction
+    data object Import : WordListsAction
+    data object CancelImport : WordListsAction
+    data object DismissImportResult : WordListsAction
+    data class Rename(val id: CustomWordListId, val name: String) : WordListsAction
+    data class Delete(val id: CustomWordListId) : WordListsAction
+    data object CheckForUpdates : WordListsAction
+    data object ApplyUpdate : WordListsAction
+    data object DismissUpdate : WordListsAction
+    data object RestoreBundledWordLists : WordListsAction
+}
+
 /**
  * Renders the core's Word Lists state: every Word List with its Word count and Strength per Word, the
  * running import, and rename and delete for Custom Word Lists. Every action is forwarded to the core.
@@ -62,35 +76,12 @@ fun WordListsScreen(
     wordLists: List<WordListInfo>,
     importState: ImportState,
     effUpdateState: EffUpdateState,
-    onNavigateUp: () -> Unit,
-    onImport: () -> Unit,
-    onCancelImport: () -> Unit,
-    onDismissImportResult: () -> Unit,
-    onRename: (CustomWordListId, String) -> Unit,
-    onDelete: (CustomWordListId) -> Unit,
-    onCheckForUpdates: () -> Unit,
-    onApplyUpdate: () -> Unit,
-    onDismissUpdate: () -> Unit,
-    onRestoreBundledWordLists: () -> Unit,
+    onAction: (WordListsAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.word_lists)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.navigate_up))
-                    }
-                },
-                actions = {
-                    TextButton(onClick = onImport, enabled = importState !is ImportState.Importing) {
-                        Text(stringResource(R.string.import_word_list))
-                    }
-                },
-            )
-        },
+        topBar = { WordListsTopBar(importState, onAction) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -103,108 +94,97 @@ fun WordListsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val readable = Modifier.widthIn(max = 600.dp).fillMaxWidth()
-            if (importState is ImportState.Importing) ImportProgress(importState.progress, onCancelImport, readable)
-            wordLists.forEach { info ->
-                ListItem(
-                    modifier = readable,
-                    supportingContent = {
-                        val details = pluralStringResource(R.plurals.word_list_details, info.wordCount, info.wordCount, info.strengthPerWordBits)
-                        Text(if (info.updated) stringResource(R.string.word_list_updated, details) else details)
-                    },
-                    trailingContent = (info.id as? CustomWordListId)?.let { id ->
-                        { CustomWordListMenu(nameOf(info), onRename = { onRename(id, it) }, onDelete = { onDelete(id) }) }
-                    },
-                ) { Text(nameOf(info)) }
+            if (importState is ImportState.Importing) {
+                ImportProgress(importState.progress, { onAction(WordListsAction.CancelImport) }, readable)
             }
+            wordLists.forEach { info -> WordListRow(info, onAction, readable) }
             EffUpdateControls(
                 checking = effUpdateState == EffUpdateState.Checking,
                 anyUpdated = wordLists.any { it.updated },
-                onCheckForUpdates = onCheckForUpdates,
-                onRestoreBundledWordLists = onRestoreBundledWordLists,
+                onCheckForUpdates = { onAction(WordListsAction.CheckForUpdates) },
+                onRestoreBundledWordLists = { onAction(WordListsAction.RestoreBundledWordLists) },
                 modifier = readable,
             )
         }
     }
-    EffUpdateResult(effUpdateState, onApplyUpdate, onDismissUpdate)
+    EffUpdateResult(
+        effUpdateState,
+        { onAction(WordListsAction.ApplyUpdate) },
+        { onAction(WordListsAction.DismissUpdate) },
+    )
     when (importState) {
-        is ImportState.Imported -> ImportResult(stringResource(R.string.import_done, importState.name), onDismissImportResult)
-        is ImportState.Failed -> ImportResult(importErrorMessage(importState.error), onDismissImportResult)
+        is ImportState.Imported -> ImportResult(stringResource(R.string.import_done, importState.name)) {
+            onAction(WordListsAction.DismissImportResult)
+        }
+        is ImportState.Failed -> ImportResult(importErrorMessage(importState.error)) {
+            onAction(WordListsAction.DismissImportResult)
+        }
         else -> {}
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EffUpdateControls(
-    checking: Boolean,
-    anyUpdated: Boolean,
-    onCheckForUpdates: () -> Unit,
-    onRestoreBundledWordLists: () -> Unit,
+private fun WordListsTopBar(
+    importState: ImportState,
+    onAction: (WordListsAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (checking) {
-            Text(stringResource(R.string.eff_checking))
-            LinearProgressIndicator(Modifier.fillMaxWidth())
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onCheckForUpdates, enabled = !checking) { Text(stringResource(R.string.eff_check_for_updates)) }
-            TextButton(onClick = onRestoreBundledWordLists, enabled = anyUpdated && !checking) { Text(stringResource(R.string.eff_restore_bundled)) }
-        }
-    }
+    TopAppBar(
+        title = { Text(stringResource(R.string.word_lists)) },
+        modifier = modifier,
+        navigationIcon = {
+            IconButton(onClick = { onAction(WordListsAction.NavigateUp) }) {
+                Icon(
+                    painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = stringResource(R.string.navigate_up),
+                )
+            }
+        },
+        actions = {
+            TextButton(
+                onClick = { onAction(WordListsAction.Import) },
+                enabled = importState !is ImportState.Importing,
+            ) {
+                Text(stringResource(R.string.import_word_list))
+            }
+        },
+    )
 }
 
-/** The check's outcome: what changed, for the user to confirm, or why nothing did. */
+/** One Word List with its Word count and Strength per Word, and rename and delete if it is a Custom Word List. */
 @Composable
-private fun EffUpdateResult(state: EffUpdateState, onApply: () -> Unit, onDismiss: () -> Unit) {
-    when (state) {
-        is EffUpdateState.UpdateAvailable -> AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.eff_update_title)) },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.changes.forEach { EffChange(it) }
-                }
-            },
-            confirmButton = { TextButton(onClick = onApply) { Text(stringResource(R.string.eff_update)) } },
-            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-        )
-        EffUpdateState.UpToDate -> ImportResult(stringResource(R.string.eff_up_to_date), onDismiss)
-        EffUpdateState.Updated -> ImportResult(stringResource(R.string.eff_updated), onDismiss)
-        is EffUpdateState.Failed -> ImportResult(effUpdateErrorMessage(state.error), onDismiss)
-        EffUpdateState.Idle, EffUpdateState.Checking -> {}
-    }
-}
-
-@Composable
-private fun EffChange(change: EffWordListChange) {
-    val name = stringResource(wordListNames.getValue(change.wordList))
-    Column {
-        if (change.wordsAdded == 0L && change.wordsRemoved == 0L) {
-            Text(stringResource(R.string.eff_change_reordered, name))
-            return
-        }
-        Text(pluralStringResource(R.plurals.eff_change, change.wordsAdded, name, change.wordsAdded, change.wordsRemoved))
-        if (change.sampleAdded.isNotEmpty()) Text(stringResource(R.string.eff_change_added, sample(change.sampleAdded, change.wordsAdded)))
-        if (change.sampleRemoved.isNotEmpty()) Text(stringResource(R.string.eff_change_removed, sample(change.sampleRemoved, change.wordsRemoved)))
-    }
-}
-
-private fun sample(words: List<String>, total: Long) = (if (total > words.size) words + "…" else words).joinToString(", ")
-
-@Composable
-@ReadOnlyComposable
-private fun effUpdateErrorMessage(error: EffUpdateError): String = when (error) {
-    EffUpdateError.Offline -> stringResource(R.string.eff_offline)
-    is EffUpdateError.HttpStatus -> stringResource(R.string.eff_http_status, error.code)
-    EffUpdateError.TooLarge -> stringResource(R.string.eff_too_large)
-    EffUpdateError.Redirected -> stringResource(R.string.eff_redirected)
-    is EffUpdateError.Invalid -> stringResource(R.string.eff_invalid, stringResource(wordListNames.getValue(error.wordList)), importErrorMessage(error.error))
-    EffUpdateError.StorageFailed -> stringResource(R.string.eff_storage_failed)
+private fun WordListRow(info: WordListInfo, onAction: (WordListsAction) -> Unit, modifier: Modifier = Modifier) {
+    ListItem(
+        modifier = modifier,
+        supportingContent = {
+            val details = pluralStringResource(
+                R.plurals.word_list_details,
+                info.wordCount,
+                info.wordCount,
+                info.strengthPerWordBits,
+            )
+            Text(if (info.updated) stringResource(R.string.word_list_updated, details) else details)
+        },
+        trailingContent = (info.id as? CustomWordListId)?.let { id ->
+            {
+                CustomWordListMenu(
+                    nameOf(info),
+                    onRename = { onAction(WordListsAction.Rename(id, it)) },
+                    onDelete = { onAction(WordListsAction.Delete(id)) },
+                )
+            }
+        },
+    ) { Text(nameOf(info)) }
 }
 
 @Composable
 private fun ImportProgress(progress: Double, onCancel: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Row(
+        modifier.padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.importing))
             LinearProgressIndicator(progress = { progress.toFloat() }, modifier = Modifier.fillMaxWidth())
@@ -214,7 +194,7 @@ private fun ImportProgress(progress: Double, onCancel: () -> Unit, modifier: Mod
 }
 
 @Composable
-private fun ImportResult(message: String, onDismiss: () -> Unit) {
+internal fun ImportResult(message: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
@@ -229,11 +209,20 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
     var deleting by rememberSaveable { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menu = true }) {
-            Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.word_list_actions, name))
+            Icon(
+                painterResource(R.drawable.ic_more_vert),
+                contentDescription = stringResource(R.string.word_list_actions, name),
+            )
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.rename)) }, onClick = { menu = false; renaming = true })
-            DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { menu = false; deleting = true })
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.rename)) },
+                onClick = { menu = false; renaming = true },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = { menu = false; deleting = true },
+            )
         }
     }
     if (renaming) {
@@ -241,9 +230,18 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
         AlertDialog(
             onDismissRequest = { renaming = false },
             title = { Text(stringResource(R.string.rename_word_list)) },
-            text = { OutlinedTextField(newName, { newName = it }, label = { Text(stringResource(R.string.name)) }, singleLine = true) },
+            text = {
+                OutlinedTextField(
+                    newName,
+                    { newName = it },
+                    label = { Text(stringResource(R.string.name)) },
+                    singleLine = true,
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { renaming = false; onRename(newName) }, enabled = newName.isNotBlank()) { Text(stringResource(R.string.rename)) }
+                TextButton(onClick = { renaming = false; onRename(newName) }, enabled = newName.isNotBlank()) {
+                    Text(stringResource(R.string.rename))
+                }
             },
             dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -252,18 +250,24 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
         AlertDialog(
             onDismissRequest = { deleting = false },
             title = { Text(stringResource(R.string.delete_word_list, name)) },
-            confirmButton = { TextButton(onClick = { deleting = false; onDelete() }) { Text(stringResource(R.string.delete)) } },
+            confirmButton = {
+                TextButton(onClick = { deleting = false; onDelete() }) { Text(stringResource(R.string.delete)) }
+            },
             dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
 
 /** Why an import was rejected, naming the offending line. */
+// One row per ImportError: a lookup table, which the complexity count mistakes for branching.
+@Suppress("CyclomaticComplexMethod")
 @Composable
 @ReadOnlyComposable
 fun importErrorMessage(error: ImportError): String = when (error) {
-    is ImportError.WrongWordCount -> pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
-    is ImportError.DuplicateWord -> stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
+    is ImportError.WrongWordCount ->
+        pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
+    is ImportError.DuplicateWord ->
+        stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
     is ImportError.WordHasWhitespace -> stringResource(R.string.import_word_has_whitespace, error.line)
     is ImportError.InvalidRoll -> stringResource(R.string.import_invalid_roll, error.line)
     is ImportError.MixedRollLength -> stringResource(R.string.import_mixed_roll_length, error.line)
@@ -273,7 +277,8 @@ fun importErrorMessage(error: ImportError): String = when (error) {
     is ImportError.LineTooLong -> stringResource(R.string.import_line_too_long, error.line)
     is ImportError.NotText -> stringResource(R.string.import_not_text, error.line)
     is ImportError.AlreadyImported -> stringResource(R.string.import_already_imported, error.name)
-    is ImportError.AlreadyImportedAsEff -> stringResource(R.string.import_already_imported, stringResource(wordListNames.getValue(error.wordList)))
+    is ImportError.AlreadyImportedAsEff ->
+        stringResource(R.string.import_already_imported, stringResource(wordListNames.getValue(error.wordList)))
     ImportError.Unreadable -> stringResource(R.string.import_unreadable)
     ImportError.StorageFailed -> stringResource(R.string.import_storage_failed)
 }
@@ -281,25 +286,24 @@ fun importErrorMessage(error: ImportError): String = when (error) {
 /** The core counts in Long; a count too large for Int takes the form for Int.MAX_VALUE. */
 @Composable
 @ReadOnlyComposable
-private fun pluralStringResource(@PluralsRes id: Int, count: Long, vararg formatArgs: Any): String =
+internal fun pluralStringResource(@PluralsRes id: Int, count: Long, vararg formatArgs: Any): String =
     pluralStringResource(id, count.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), *formatArgs)
 
 @Preview(name = "Phone", device = "spec:width=411dp,height=891dp", showBackground = true)
 @Preview(name = "Large font", device = "spec:width=411dp,height=891dp", fontScale = 2f, showBackground = true)
 @Composable
-private fun WordListsScreenPreview() {
+internal fun WordListsScreenPreview() {
     DicewareTheme {
         WordListsScreen(
             listOf(
-                WordListInfo(EffWordList.LARGE, null, 7776, 12.92),
-                WordListInfo(EffWordList.SHORT_1, null, 1296, 10.34),
-                WordListInfo(EffWordList.SHORT_2, null, 1296, 10.34),
-                WordListInfo(CustomWordListId("0"), "Animals", 279_936, 18.09),
+                WordListInfo(EffWordList.LARGE, null, wordCount = 7776, strengthPerWordBits = 12.92),
+                WordListInfo(EffWordList.SHORT_1, null, wordCount = 1296, strengthPerWordBits = 10.34),
+                WordListInfo(EffWordList.SHORT_2, null, wordCount = 1296, strengthPerWordBits = 10.34),
+                WordListInfo(CustomWordListId("0"), "Animals", wordCount = 279_936, strengthPerWordBits = 18.09),
             ),
-            ImportState.Importing(0.4),
+            ImportState.Importing(progress = 0.4),
             EffUpdateState.Idle,
-            onNavigateUp = {}, onImport = {}, onCancelImport = {}, onDismissImportResult = {}, onRename = { _, _ -> }, onDelete = {},
-            onCheckForUpdates = {}, onApplyUpdate = {}, onDismissUpdate = {}, onRestoreBundledWordLists = {},
+            onAction = {},
         )
     }
 }
