@@ -40,7 +40,10 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiceEntryScreen(
-    entry: DiceEntryState, onDie: (Int) -> Unit, onRemoveLastDie: () -> Unit, onNavigateUp: () -> Unit,
+    entry: DiceEntryState,
+    onDie: (Int) -> Unit,
+    onRemoveLastDie: () -> Unit,
+    onNavigateUp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -123,8 +126,11 @@ private fun dicePrompt(entry: DiceEntryState): String = when (entry.step) {
         entry.wordCount,
         entry.diceInRoll,
     )
+
     DiceStep.DIGIT -> stringResource(R.string.dice_step_digit)
+
     DiceStep.SYMBOL -> stringResource(R.string.dice_step_symbol)
+
     DiceStep.DONE -> stringResource(R.string.dice_complete)
 }
 

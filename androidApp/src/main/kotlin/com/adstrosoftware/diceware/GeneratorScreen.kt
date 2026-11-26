@@ -8,12 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,8 +31,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -66,7 +66,9 @@ fun DicewareTheme(content: @Composable () -> Unit) {
     val colors = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(LocalContext.current) else dynamicLightColorScheme(LocalContext.current)
+
         dark -> darkColorScheme()
+
         else -> lightColorScheme()
     }
     MaterialTheme(colorScheme = colors, content = content)
@@ -154,7 +156,10 @@ private fun isWidthExpanded(): Boolean {
 /** The Passphrase (or why there is none), its Strength and the actions on it. */
 @Composable
 private fun PassphrasePane(
-    state: GeneratorState, diceMode: Boolean, onAction: (GeneratorAction) -> Unit, modifier: Modifier = Modifier,
+    state: GeneratorState,
+    diceMode: Boolean,
+    onAction: (GeneratorAction) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val fill = Modifier.fillMaxWidth()
     Column(
@@ -164,6 +169,7 @@ private fun PassphrasePane(
     ) {
         when (state) {
             GeneratorState.Loading -> {}
+
             is GeneratorState.Ready -> {
                 Passphrase(state, fill)
                 Text(
@@ -180,11 +186,13 @@ private fun PassphrasePane(
                     )
                 }
             }
+
             GeneratorState.AwaitingDice -> Text(
                 stringResource(R.string.awaiting_dice),
                 textAlign = TextAlign.Center,
                 modifier = fill,
             )
+
             GeneratorState.RandomnessUnavailable -> Text(
                 text = stringResource(R.string.randomness_unavailable),
                 color = MaterialTheme.colorScheme.error,
@@ -218,7 +226,12 @@ private fun Passphrase(state: GeneratorState.Ready, modifier: Modifier = Modifie
     val resources = LocalResources.current
     // Changing text in a polite live region is how Compose announces; the count lets the same text be announced again.
     var spellOuts by remember(state.passphrase) { mutableIntStateOf(0) }
-    val spellOut = listOf(CustomAccessibilityAction(stringResource(R.string.spell_out)) { spellOuts++; true })
+    val spellOut = listOf(
+        CustomAccessibilityAction(stringResource(R.string.spell_out)) {
+            spellOuts++
+            true
+        },
+    )
     Column(
         modifier,
         horizontalAlignment = Alignment.CenterHorizontally,

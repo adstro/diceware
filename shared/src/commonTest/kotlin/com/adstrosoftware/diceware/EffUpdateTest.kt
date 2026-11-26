@@ -10,10 +10,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.flow.first
-import kotlinx.io.IOException
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
@@ -153,8 +153,11 @@ class EffUpdateTest {
         for (location in locations) {
             // Wherever it leads serves a valid list, so only the redirect itself can fail the check.
             handler = { request ->
-                if (request.url.toString() == location) respond(bundledText(EffWordList.LARGE), HttpStatusCode.OK)
-                else respond("", HttpStatusCode.MovedPermanently, headersOf(HttpHeaders.Location, location))
+                if (request.url.toString() == location) {
+                    respond(bundledText(EffWordList.LARGE), HttpStatusCode.OK)
+                } else {
+                    respond("", HttpStatusCode.MovedPermanently, headersOf(HttpHeaders.Location, location))
+                }
             }
             assertFailsAndChangesNothing(EffUpdateError.Redirected)
         }
@@ -204,7 +207,12 @@ class EffUpdateTest {
         "/lists".toPath(),
         backgroundScope,
         StandardTestDispatcher(testScheduler),
-        httpEngine = { MockEngine { request -> requested += request.url.toString(); handler(request) } },
+        httpEngine = {
+            MockEngine { request ->
+                requested += request.url.toString()
+                handler(request)
+            }
+        },
     )
 
     private suspend fun WordListLibrary.loaded() = wordLists.first { it.isNotEmpty() }

@@ -8,17 +8,18 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -30,7 +31,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import androidx.compose.ui.unit.dp
 
 @RunWith(AndroidJUnit4::class)
 class GeneratorScreenTest {
@@ -47,7 +47,10 @@ class GeneratorScreenTest {
     fun resetSettings() {
         val generator = ViewModelProvider(rule.activity)[GeneratorViewModel::class.java].generator
         // waitUntil alone may not run the main looper the Generator resumes on, so idle it each time.
-        rule.waitUntil(5_000) { rule.waitForIdle(); generator.state.value != GeneratorState.Loading }
+        rule.waitUntil(5_000) {
+            rule.waitForIdle()
+            generator.state.value != GeneratorState.Loading
+        }
         rule.runOnUiThread {
             val defaults = PassphraseOptions()
             generator.change(OptionChange.SetWordCount(defaults.wordCount))

@@ -90,7 +90,11 @@ internal class EffWordLists(
                     }
                     found += IndexEntry.EffCopy(staged.sha256, staged.dicePerRoll, list)
                     val downloaded = DiskWordList(staged.dicePerRoll, fileSystem, staging, staged.sha256)
-                    try { change(list, inUse(list), downloaded) } finally { downloaded.close() }
+                    try {
+                        change(list, inUse(list), downloaded)
+                    } finally {
+                        downloaded.close()
+                    }
                 }
                 pending = found
                 if (changes.isEmpty()) EffUpdateState.UpToDate else EffUpdateState.UpdateAvailable(changes)

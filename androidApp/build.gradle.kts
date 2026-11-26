@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     // Type-resolved detekt (detektDebug): the Compose and coroutine rules that need types.
     alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
 }
 
 detekt {
@@ -34,6 +35,9 @@ android {
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
+// Line coverage of the app from its unit tests may not drop below today's level.
+kover { reports { variant("debug") { verify { rule { minBound(89) } } } } }
+
 kotlin {
     jvmToolchain(21)
     compilerOptions { allWarningsAsErrors = true }
@@ -41,6 +45,7 @@ kotlin {
 
 dependencies {
     detektPlugins(libs.compose.rules.detekt)
+    detektPlugins(libs.detekt.ktlint)
     implementation(projects.shared)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
