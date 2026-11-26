@@ -2,10 +2,8 @@
 # bypass missing here and on any line here that the code no longer has. Add a line only after /interrogate
 # and the project owner approve the bypass (AGENTS.md, "Static analysis").
 .codespellrc | codespell:skip:*wordlists/* | 1 | The EFF Word Lists are third-party data whose Words must match the published lists exactly.
-androidApp/src/main/kotlin/com/adstrosoftware/diceware/WordListsScreen.kt | suppress:CyclomaticComplexMethod | 1 | importErrorMessage is one row per ImportError: a lookup table, not branching logic.
 config/detekt.yml | detekt:exceptions.SwallowedException.active=false | 1 | ON HOLD (item 10): decided with the logging design.
 config/detekt.yml | detekt:naming.FunctionNaming.ignoreAnnotated=['Composable'] | 1 | Compose requires PascalCase composables, and its own ComposableNaming check enforces it.
-iosApp/iosApp/WordListsView.swift | swiftlint-disable:cyclomatic_complexity | 1 | message(for:) is one case per ImportError: a lookup table, not branching logic.
 shared/src/androidHostTest/kotlin/com/adstrosoftware/diceware/LargeWordListMemoryTest.kt | suppress:InjectDispatcher | 1 | The memory test measures a real import on real threads.
 shared/src/androidMain/kotlin/com/adstrosoftware/diceware/SecureRandomBytes.android.kt | suppress:TooGenericExceptionCaught | 1 | Any failure of the secure random source must become "randomness unavailable", never a crash.
 shared/src/commonMain/kotlin/com/adstrosoftware/diceware/EffUpdate.kt | suppress:TooGenericExceptionCaught | 1 | Each HTTP engine throws its own types for network failures, and every one of them means Offline.
