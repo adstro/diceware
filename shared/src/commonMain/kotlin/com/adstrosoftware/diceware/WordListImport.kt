@@ -11,20 +11,29 @@ import okio.use
 import okio.utf8Size
 
 /** Why an import was rejected; line numbers are 1-based lines of the imported file. Nothing is imported. */
+/** What is wrong with one line of an imported file. */
+enum class LineProblem {
+    WORD_HAS_WHITESPACE,
+    INVALID_ROLL,
+    MIXED_ROLL_LENGTH,
+    MISSING_ROLL,
+    LINE_TOO_LONG,
+
+    /** The file is not UTF-8 text. */
+    NOT_TEXT,
+}
+
 sealed interface ImportError {
     /** Not exactly 6ⁿ Words with n ≥ 4. */
     data class WrongWordCount(val wordCount: Long) : ImportError
     data class DuplicateWord(val line: Long, val word: String, val firstLine: Long) : ImportError
-    data class WordHasWhitespace(val line: Long) : ImportError
-    data class InvalidRoll(val line: Long) : ImportError
-    data class MixedRollLength(val line: Long) : ImportError
-    data class MissingRoll(val line: Long) : ImportError
+
+    /** One line of the file is wrong in a way that needs only its number to explain. */
+    data class BadLine(val line: Long, val problem: LineProblem) : ImportError
+
     /** A Diceware-format file with no line for this Roll. */
     data class RollNotFound(val roll: String) : ImportError
     data class RepeatedRoll(val line: Long, val firstLine: Long) : ImportError
-    data class LineTooLong(val line: Long) : ImportError
-    /** The file is not UTF-8 text. */
-    data class NotText(val line: Long) : ImportError
     data class AlreadyImported(val name: String) : ImportError
     /** The file holds the same Words as this EFF Word List. */
     data class AlreadyImportedAsEff(val wordList: EffWordList) : ImportError
@@ -104,7 +113,7 @@ private suspend fun BufferedSource.forEachLine(
             if (sizeBytes > 0) progress(READ_SHARE * bytesRead.coerceAtMost(sizeBytes) / sizeBytes)
         }
         // Malformed UTF-8 decodes to U+FFFD; importing it would silently change the Word.
-        if ('\uFFFD' in text) reject(ImportError.NotText(line))
+        if ('\uFFFD' in text) reject(ImportError.BadLine(line, LineProblem.NOT_TEXT))
         val trimmed = (if (line == 1L) text.removePrefix("\uFEFF") else text).trim()
         if (trimmed.isNotEmpty()) each(line, trimmed)
     }
@@ -136,20 +145,22 @@ private class LineChecker(
     }
 
     private fun dicewareWord(line: Long, fields: List<String>): String {
-        if (fields.size == 1) reject(ImportError.MissingRoll(line))
-        if (fields.size > 2) reject(ImportError.WordHasWhitespace(line))
+        if (fields.size == 1) reject(ImportError.BadLine(line, LineProblem.MISSING_ROLL))
+        if (fields.size > 2) reject(ImportError.BadLine(line, LineProblem.WORD_HAS_WHITESPACE))
         val roll = fields[0]
-        if (!isRoll(roll)) reject(ImportError.InvalidRoll(line))
+        if (!isRoll(roll)) reject(ImportError.BadLine(line, LineProblem.INVALID_ROLL))
         if (rollLength == 0) rollLength = roll.length
-        if (roll.length != rollLength) reject(ImportError.MixedRollLength(line))
+        if (roll.length != rollLength) reject(ImportError.BadLine(line, LineProblem.MIXED_ROLL_LENGTH))
         byRoll.add(Record(roll, line, fields[1]))
         return fields[1]
     }
 
     private fun plainWord(line: Long, fields: List<String>): String {
         // A Roll on this line but not on the first: the first line is the one missing its Roll.
-        if (fields.size == 2 && fields[0].all { it.isDigit() }) reject(ImportError.MissingRoll(firstLine))
-        if (fields.size > 1) reject(ImportError.WordHasWhitespace(line))
+        if (fields.size == 2 && fields[0].all { it.isDigit() }) {
+            reject(ImportError.BadLine(firstLine, LineProblem.MISSING_ROLL))
+        }
+        if (fields.size > 1) reject(ImportError.BadLine(line, LineProblem.WORD_HAS_WHITESPACE))
         output.write(fields[0])
         return fields[0]
     }
@@ -192,7 +203,7 @@ private fun BufferedSource.readLineBounded(lineNumber: Long): String? {
     return when {
         newline >= 0 -> readUtf8(newline).also { skip(1) }
         !request(MAX_LINE_BYTES + 1) -> if (exhausted()) null else readUtf8()
-        else -> reject(ImportError.LineTooLong(lineNumber))
+        else -> reject(ImportError.BadLine(lineNumber, LineProblem.LINE_TOO_LONG))
     }
 }
 

@@ -1,6 +1,7 @@
 package com.adstrosoftware.diceware
 
 import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -259,8 +260,6 @@ private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelet
 }
 
 /** Why an import was rejected, naming the offending line. */
-// One row per ImportError: a lookup table, which the complexity count mistakes for branching.
-@Suppress("CyclomaticComplexMethod")
 @Composable
 @ReadOnlyComposable
 fun importErrorMessage(error: ImportError): String = when (error) {
@@ -268,19 +267,25 @@ fun importErrorMessage(error: ImportError): String = when (error) {
         pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
     is ImportError.DuplicateWord ->
         stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
-    is ImportError.WordHasWhitespace -> stringResource(R.string.import_word_has_whitespace, error.line)
-    is ImportError.InvalidRoll -> stringResource(R.string.import_invalid_roll, error.line)
-    is ImportError.MixedRollLength -> stringResource(R.string.import_mixed_roll_length, error.line)
-    is ImportError.MissingRoll -> stringResource(R.string.import_missing_roll, error.line)
+    is ImportError.BadLine -> stringResource(messageOf(error.problem), error.line)
     is ImportError.RollNotFound -> stringResource(R.string.import_roll_not_found, error.roll)
     is ImportError.RepeatedRoll -> stringResource(R.string.import_repeated_roll, error.line, error.firstLine)
-    is ImportError.LineTooLong -> stringResource(R.string.import_line_too_long, error.line)
-    is ImportError.NotText -> stringResource(R.string.import_not_text, error.line)
     is ImportError.AlreadyImported -> stringResource(R.string.import_already_imported, error.name)
     is ImportError.AlreadyImportedAsEff ->
         stringResource(R.string.import_already_imported, stringResource(wordListNames.getValue(error.wordList)))
     ImportError.Unreadable -> stringResource(R.string.import_unreadable)
     ImportError.StorageFailed -> stringResource(R.string.import_storage_failed)
+}
+
+/** The message for a [LineProblem]; each takes the line number. */
+@StringRes
+private fun messageOf(problem: LineProblem): Int = when (problem) {
+    LineProblem.WORD_HAS_WHITESPACE -> R.string.import_word_has_whitespace
+    LineProblem.INVALID_ROLL -> R.string.import_invalid_roll
+    LineProblem.MIXED_ROLL_LENGTH -> R.string.import_mixed_roll_length
+    LineProblem.MISSING_ROLL -> R.string.import_missing_roll
+    LineProblem.LINE_TOO_LONG -> R.string.import_line_too_long
+    LineProblem.NOT_TEXT -> R.string.import_not_text
 }
 
 /** The core counts in Long; a count too large for Int takes the form for Int.MAX_VALUE. */

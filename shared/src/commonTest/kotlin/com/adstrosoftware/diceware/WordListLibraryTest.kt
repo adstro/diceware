@@ -94,7 +94,10 @@ class WordListLibraryTest {
 
     @Test
     fun aFirstLineWithoutARollInAnOtherwiseDicewareListIsAMissingRoll() = runTest {
-        assertRejected(ImportError.MissingRoll(1), "w0\n" + diceware(4).lines().drop(1).joinToString("\n"))
+        assertRejected(
+            ImportError.BadLine(1, LineProblem.MISSING_ROLL),
+            "w0\n" + diceware(4).lines().drop(1).joinToString("\n"),
+        )
     }
 
     @Test
@@ -105,31 +108,35 @@ class WordListLibraryTest {
 
     @Test
     fun rejectsWordsContainingWhitespace() = runTest {
-        assertRejected(ImportError.WordHasWhitespace(8), plain(4).replace("\nw7\n", "\nice cream\n"))
-        assertRejected(ImportError.WordHasWhitespace(8), diceware(4).replace("\tw7\n", "\tice cream\n"))
+        val spaceOnLine8 = ImportError.BadLine(8, LineProblem.WORD_HAS_WHITESPACE)
+        assertRejected(spaceOnLine8, plain(4).replace("\nw7\n", "\nice cream\n"))
+        assertRejected(spaceOnLine8, diceware(4).replace("\tw7\n", "\tice cream\n"))
         // Unicode whitespace too: a no-break space and an em space.
-        assertRejected(ImportError.WordHasWhitespace(8), plain(4).replace("\nw7\n", "\nice\u00A0cream\n"))
-        assertRejected(ImportError.WordHasWhitespace(8), diceware(4).replace("\tw7\n", "\tice\u2003cream\n"))
+        assertRejected(spaceOnLine8, plain(4).replace("\nw7\n", "\nice\u00A0cream\n"))
+        assertRejected(spaceOnLine8, diceware(4).replace("\tw7\n", "\tice\u2003cream\n"))
     }
 
     @Test
     fun rejectsInvalidMixedLengthMissingAndRepeatedRolls() = runTest {
-        assertRejected(ImportError.InvalidRoll(3), diceware(4).replace("1113\t", "1173\t"))
-        assertRejected(ImportError.InvalidRoll(3), diceware(4).replace("1113\t", "x113\t"))
-        assertRejected(ImportError.MixedRollLength(3), diceware(4).replace("1113\t", "11131\t"))
-        assertRejected(ImportError.MissingRoll(3), diceware(4).replace("1113\t", ""))
+        assertRejected(ImportError.BadLine(3, LineProblem.INVALID_ROLL), diceware(4).replace("1113\t", "1173\t"))
+        assertRejected(ImportError.BadLine(3, LineProblem.INVALID_ROLL), diceware(4).replace("1113\t", "x113\t"))
+        assertRejected(ImportError.BadLine(3, LineProblem.MIXED_ROLL_LENGTH), diceware(4).replace("1113\t", "11131\t"))
+        assertRejected(ImportError.BadLine(3, LineProblem.MISSING_ROLL), diceware(4).replace("1113\t", ""))
         assertRejected(ImportError.RepeatedRoll(3, 2), diceware(4).replace("1113\t", "1112\t"))
     }
 
     @Test
     fun rejectsLinesTooLongToBeAWordAndTextThatIsNotUtf8() = runTest {
-        assertRejected(ImportError.LineTooLong(2), plain(4).replace("\nw1\n", "\n" + "a".repeat(2000) + "\n"))
+        assertRejected(
+            ImportError.BadLine(2, LineProblem.LINE_TOO_LONG),
+            plain(4).replace("\nw1\n", "\n" + "a".repeat(2000) + "\n"),
+        )
         val library = library()
         val bytes = Buffer().writeUtf8("w0\n").writeByte(0xC3).writeUtf8(plain(4).substringAfter("w0"))
 
         library.import("bad.txt", bytes.size) { bytes }
 
-        assertEquals(ImportState.Failed(ImportError.NotText(2)), library.importState.value)
+        assertEquals(ImportState.Failed(ImportError.BadLine(2, LineProblem.NOT_TEXT)), library.importState.value)
     }
 
     @Test

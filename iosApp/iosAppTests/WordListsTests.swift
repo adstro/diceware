@@ -100,7 +100,10 @@ struct WordListsTests {
         #expect(WordListsView.message(for: EffUpdateErrorRedirected.shared)
             == "eff.org redirected the download to another site, so it was refused. Nothing was changed.")
         #expect(WordListsView.message(
-            for: EffUpdateErrorInvalid(wordList: .short2, error: ImportErrorWordHasWhitespace(line: 8))
+            for: EffUpdateErrorInvalid(
+                wordList: .short2,
+                error: ImportErrorBadLine(line: 8, problem: .wordHasWhitespace)
+            )
         ) == "EFF Short #2 from eff.org is not a valid Word List. "
             + "Not imported, line 8: the Word contains a space. Nothing was changed.")
     }

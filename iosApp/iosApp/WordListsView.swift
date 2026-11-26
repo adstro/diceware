@@ -206,8 +206,7 @@ struct WordListsView: View {
     }
 
     /// Why an import was rejected, naming the offending line.
-    /// One case per ImportError: a lookup table, which the complexity count mistakes for branching.
-    static func message(for error: ImportError) -> String { // swiftlint:disable:this cyclomatic_complexity
+    static func message(for error: ImportError) -> String {
         switch onEnum(of: error) {
         case .wrongWordCount(let detail):
             String(localized: """
@@ -219,16 +218,8 @@ struct WordListsView: View {
                 Not imported: line \(detail.line.formatted()), “\(detail.word)”, repeats the Word on line \
                 \(detail.firstLine.formatted()) (ignoring case).
                 """)
-        case .wordHasWhitespace(let detail):
-            String(localized: "Not imported, line \(detail.line.formatted()): the Word contains a space.")
-        case .invalidRoll(let detail):
-            String(localized: "Not imported, line \(detail.line.formatted()): the Roll must be digits 1 to 6.")
-        case .mixedRollLength(let detail):
-            String(localized: """
-                Not imported, line \(detail.line.formatted()): the Roll has a different number of dice from line 1.
-                """)
-        case .missingRoll(let detail):
-            String(localized: "Not imported, line \(detail.line.formatted()): there is no Roll.")
+        case .badLine(let detail):
+            message(for: detail.problem, line: detail.line.formatted())
         case .rollNotFound(let detail):
             String(localized: "Not imported: no line has the Roll \(detail.roll).")
         case .repeatedRoll(let detail):
@@ -236,10 +227,6 @@ struct WordListsView: View {
                 Not imported, line \(detail.line.formatted()): the Roll repeats the Roll on line \
                 \(detail.firstLine.formatted()).
                 """)
-        case .lineTooLong(let detail):
-            String(localized: "Not imported: line \(detail.line.formatted()) is too long to be a Word.")
-        case .notText(let detail):
-            String(localized: "Not imported: line \(detail.line.formatted()) is not UTF-8 text.")
         case .alreadyImported(let detail):
             String(localized: "Not imported: already imported as \(detail.name).")
         case .alreadyImportedAsEff(let detail):
@@ -248,6 +235,23 @@ struct WordListsView: View {
             String(localized: "Not imported: the file could not be read.")
         case .storageFailed:
             String(localized: "Not imported: there is not enough storage space. Nothing was saved.")
+        }
+    }
+
+    private static func message(for problem: LineProblem, line: String) -> String {
+        switch problem {
+        case .wordHasWhitespace:
+            String(localized: "Not imported, line \(line): the Word contains a space.")
+        case .invalidRoll:
+            String(localized: "Not imported, line \(line): the Roll must be digits 1 to 6.")
+        case .mixedRollLength:
+            String(localized: "Not imported, line \(line): the Roll has a different number of dice from line 1.")
+        case .missingRoll:
+            String(localized: "Not imported, line \(line): there is no Roll.")
+        case .lineTooLong:
+            String(localized: "Not imported: line \(line) is too long to be a Word.")
+        case .notText:
+            String(localized: "Not imported: line \(line) is not UTF-8 text.")
         }
     }
 }
