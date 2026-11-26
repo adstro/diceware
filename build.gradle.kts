@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.skie) apply false
     alias(libs.plugins.detekt)
+    alias(libs.plugins.kover) apply false
 }
 
 detekt {
@@ -15,4 +16,7 @@ detekt {
     parallel = true
 }
 
-dependencies { detektPlugins(libs.compose.rules.detekt) }
+dependencies {
+    detektPlugins(libs.compose.rules.detekt)
+    detektPlugins(libs.detekt.ktlint)
+}

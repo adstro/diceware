@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.skie)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
 }
 
 detekt {
@@ -13,7 +14,13 @@ detekt {
     buildUponDefaultConfig = true
 }
 
-dependencies { detektPlugins(libs.compose.rules.detekt) }
+// Line coverage of the shared code from the JVM (Android host) tests may not drop below today's level.
+kover { reports { variant("android") { verify { rule { minBound(94) } } } } }
+
+dependencies {
+    detektPlugins(libs.compose.rules.detekt)
+    detektPlugins(libs.detekt.ktlint)
+}
 
 kotlin {
     jvmToolchain(21)

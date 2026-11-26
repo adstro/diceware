@@ -128,6 +128,22 @@ REQUIRED_GATES = [
 ]
 
 
+# Coverage may not fall below these line-coverage minimums; raise them here as coverage grows.
+MIN_COVERAGE = {"shared/build.gradle.kts": 94, "androidApp/build.gradle.kts": 89}
+
+
+def coverage_gates():
+    found = Counter()
+    for path, floor in MIN_COVERAGE.items():
+        text = (ROOT / path).read_text(encoding="utf-8")
+        bounds = [int(b) for b in re.findall(r"minBound\((\d+)\)", text)]
+        if not bounds or min(bounds) < floor:
+            found[(path, f"gate-coverage-below:{floor}")] += 1
+        for match in re.finditer(r"\bexcludes\s*\{", text):
+            found[(path, "kover-excludes")] += 1
+    return found
+
+
 def build_gates():
     found = Counter()
     for path in [p for p in tracked_files_all() if p.endswith((".kts", "project.yml"))]:
@@ -145,7 +161,7 @@ def baselines():
 
 
 def all_bypasses():
-    return inline_bypasses() + detekt_config() + swiftlint_config() + android_lint_config() + codespell_config() + build_gates() + baselines()
+    return inline_bypasses() + detekt_config() + swiftlint_config() + android_lint_config() + codespell_config() + build_gates() + coverage_gates() + baselines()
 
 
 def registry():

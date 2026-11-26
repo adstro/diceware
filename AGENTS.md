@@ -12,9 +12,10 @@ Write everything in American English: code identifiers, UI strings, comments, te
 
 CI fails on any finding, so run these before committing:
 
-- Kotlin and Compose (shared core and Android app): `./gradlew detekt :shared:detektMainAndroid :shared:detektHostTestAndroid :androidApp:detektDebug :androidApp:detektDebugUnitTest`, configured in `config/detekt.yml`. The plain `detekt` task covers every source file; the others add type resolution, which the coroutine, null-safety and many Compose rules need.
+- Kotlin and Compose (shared core and Android app): `./gradlew detekt :shared:detektMainAndroid :shared:detektHostTestAndroid :androidApp:detektDebug :androidApp:detektDebugUnitTest`, configured in `config/detekt.yml`. The plain `detekt` task covers every source file; the others add type resolution, which the coroutine, null-safety and many Compose rules need. detekt also runs ktlint's formatting rules; `./gradlew detekt --auto-correct` fixes most of them.
 - Kotlin compiler: every warning is an error (`allWarningsAsErrors`), in the core and the Android app.
 - Android: `./gradlew :androidApp:lintDebug :androidApp:lintRelease`, which treat warnings as errors. Some checks run only on release. They cover the Android app only: AGP 9.3's KMP library plugin has no lint for the core's main code, which detekt covers instead.
+- Test coverage (Kover): `./gradlew :shared:koverVerifyAndroid :androidApp:koverVerifyDebug` runs the JVM tests and fails if line coverage falls below the minimum in each module's build file (shared 94%, app 89%). Raise a minimum as coverage grows, in the build file and in `scripts/analysis-exceptions.py`; lowering one, or excluding code from coverage, is a bypass.
 - Swift and SwiftUI: `swiftlint lint` from `iosApp/` (0.65.1, configured in `iosApp/.swiftlint.yml`).
 - Swift compiler: the iOS project builds in Swift 6 language mode (data races are errors) with `SWIFT_TREAT_WARNINGS_AS_ERRORS`, so every compiler warning fails the build. Set both in `iosApp/project.yml` and regenerate with XcodeGen.
 

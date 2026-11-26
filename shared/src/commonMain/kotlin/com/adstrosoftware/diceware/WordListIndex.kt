@@ -14,11 +14,8 @@ internal sealed interface IndexEntry {
 
     data class Custom(override val sha256: String, val name: String, override val dicePerRoll: Int) : IndexEntry
 
-    data class EffCopy(
-        override val sha256: String,
-        override val dicePerRoll: Int,
-        val wordList: EffWordList,
-    ) : IndexEntry
+    data class EffCopy(override val sha256: String, override val dicePerRoll: Int, val wordList: EffWordList) :
+        IndexEntry
 }
 
 /** An [IndexEntry] as `index.json` has always stored it: [eff] is set only for an EFF Word List copy. */

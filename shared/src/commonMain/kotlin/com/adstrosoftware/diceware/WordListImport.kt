@@ -7,10 +7,8 @@ import okio.FileSystem
 import okio.HashingSink
 import okio.Path
 import okio.buffer
-import okio.use
 import okio.utf8Size
 
-/** Why an import was rejected; line numbers are 1-based lines of the imported file. Nothing is imported. */
 /** What is wrong with one line of an imported file. */
 enum class LineProblem {
     WORD_HAS_WHITESPACE,
@@ -23,6 +21,7 @@ enum class LineProblem {
     NOT_TEXT,
 }
 
+/** Why an import was rejected; line numbers are 1-based lines of the imported file. Nothing is imported. */
 sealed interface ImportError {
     /** Not exactly 6ⁿ Words with n ≥ 4. */
     data class WrongWordCount(val wordCount: Long) : ImportError
@@ -35,9 +34,11 @@ sealed interface ImportError {
     data class RollNotFound(val roll: String) : ImportError
     data class RepeatedRoll(val line: Long, val firstLine: Long) : ImportError
     data class AlreadyImported(val name: String) : ImportError
+
     /** The file holds the same Words as this EFF Word List. */
     data class AlreadyImportedAsEff(val wordList: EffWordList) : ImportError
     data object Unreadable : ImportError
+
     /** Saving failed, most likely out of storage space. */
     data object StorageFailed : ImportError
 }
@@ -331,12 +332,8 @@ private class WordListWriter(fileSystem: FileSystem, directory: Path) {
 }
 
 /** A Word List on disk, as [stageWordList] wrote it: a Roll is resolved by reading just its Word. */
-internal class DiskWordList(
-    override val dicePerRoll: Int,
-    fileSystem: FileSystem,
-    directory: Path,
-    name: String,
-) : WordList {
+internal class DiskWordList(override val dicePerRoll: Int, fileSystem: FileSystem, directory: Path, name: String) :
+    WordList {
     private val words = fileSystem.openReadOnly(directory / wordListFileName(name, WORDS_FILE))
     private val offsets = fileSystem.openReadOnly(directory / wordListFileName(name, OFFSETS_FILE))
 

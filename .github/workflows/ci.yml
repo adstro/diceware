@@ -37,7 +37,8 @@ jobs:
         run: >-
           ./gradlew detekt :shared:detektMainAndroid :shared:detektHostTestAndroid
           :androidApp:detektDebug :androidApp:detektDebugUnitTest :androidApp:lintDebug :androidApp:lintRelease
-      - run: ./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest :androidApp:assembleDebug
+      - name: Tests and coverage minimums (Kover)
+        run: ./gradlew :shared:koverVerifyAndroid :androidApp:koverVerifyDebug :androidApp:assembleDebug
 
   ios:
     name: Core (iOS) + iOS app

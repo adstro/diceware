@@ -33,7 +33,9 @@ class EffUpdateScreenTest {
     private fun show() = rule.setContent {
         DicewareTheme {
             WordListsScreen(
-                lists, ImportState.Idle, state,
+                lists,
+                ImportState.Idle,
+                state,
                 onAction = { action ->
                     when (action) {
                         WordListsAction.CheckForUpdates -> actions += "check"

@@ -3,7 +3,6 @@ package com.adstrosoftware.diceware
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -14,15 +13,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,8 +25,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -117,9 +110,11 @@ fun WordListsScreen(
         is ImportState.Imported -> ImportResult(stringResource(R.string.import_done, importState.name)) {
             onAction(WordListsAction.DismissImportResult)
         }
+
         is ImportState.Failed -> ImportResult(importErrorMessage(importState.error)) {
             onAction(WordListsAction.DismissImportResult)
         }
+
         else -> {}
     }
 }
@@ -203,77 +198,29 @@ internal fun ImportResult(message: String, onDismiss: () -> Unit) {
     )
 }
 
-@Composable
-private fun CustomWordListMenu(name: String, onRename: (String) -> Unit, onDelete: () -> Unit) {
-    var menu by rememberSaveable { mutableStateOf(false) }
-    var renaming by rememberSaveable { mutableStateOf(false) }
-    var deleting by rememberSaveable { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { menu = true }) {
-            Icon(
-                painterResource(R.drawable.ic_more_vert),
-                contentDescription = stringResource(R.string.word_list_actions, name),
-            )
-        }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.rename)) },
-                onClick = { menu = false; renaming = true },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete)) },
-                onClick = { menu = false; deleting = true },
-            )
-        }
-    }
-    if (renaming) {
-        var newName by rememberSaveable { mutableStateOf(name) }
-        AlertDialog(
-            onDismissRequest = { renaming = false },
-            title = { Text(stringResource(R.string.rename_word_list)) },
-            text = {
-                OutlinedTextField(
-                    newName,
-                    { newName = it },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { renaming = false; onRename(newName) }, enabled = newName.isNotBlank()) {
-                    Text(stringResource(R.string.rename))
-                }
-            },
-            dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
-        )
-    }
-    if (deleting) {
-        AlertDialog(
-            onDismissRequest = { deleting = false },
-            title = { Text(stringResource(R.string.delete_word_list, name)) },
-            confirmButton = {
-                TextButton(onClick = { deleting = false; onDelete() }) { Text(stringResource(R.string.delete)) }
-            },
-            dismissButton = { TextButton(onClick = { deleting = false }) { Text(stringResource(R.string.cancel)) } },
-        )
-    }
-}
-
 /** Why an import was rejected, naming the offending line. */
 @Composable
 @ReadOnlyComposable
 fun importErrorMessage(error: ImportError): String = when (error) {
     is ImportError.WrongWordCount ->
         pluralStringResource(R.plurals.import_wrong_word_count, error.wordCount, error.wordCount)
+
     is ImportError.DuplicateWord ->
         stringResource(R.string.import_duplicate_word, error.line, error.word, error.firstLine)
+
     is ImportError.BadLine -> stringResource(messageOf(error.problem), error.line)
+
     is ImportError.RollNotFound -> stringResource(R.string.import_roll_not_found, error.roll)
+
     is ImportError.RepeatedRoll -> stringResource(R.string.import_repeated_roll, error.line, error.firstLine)
+
     is ImportError.AlreadyImported -> stringResource(R.string.import_already_imported, error.name)
+
     is ImportError.AlreadyImportedAsEff ->
         stringResource(R.string.import_already_imported, stringResource(wordListNames.getValue(error.wordList)))
+
     ImportError.Unreadable -> stringResource(R.string.import_unreadable)
+
     ImportError.StorageFailed -> stringResource(R.string.import_storage_failed)
 }
 

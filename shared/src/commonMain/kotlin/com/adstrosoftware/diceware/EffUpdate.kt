@@ -89,8 +89,11 @@ internal suspend fun HttpClient.download(url: String): Buffer {
                         current = redirectTarget(current, response)
                         null
                     }
+
                     response.status != HttpStatusCode.OK -> fail(EffUpdateError.HttpStatus(response.status.value))
+
                     (response.contentLength() ?: 0) > MAX_DOWNLOAD_BYTES -> fail(EffUpdateError.TooLarge)
+
                     else -> {
                         // Read one byte past the cap to tell "exactly the cap" from "too large" without a
                         // Content-Length.
