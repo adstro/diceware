@@ -14,7 +14,7 @@ detekt {
 }
 
 android {
-    namespace = "com.adstrosoftware.diceware"
+    namespace = "dev.adstro.diceware"
     // Declares the unqualified values/ strings as en-US (res/resources.properties) and lists it as the app's language.
     androidResources { generateLocaleConfig = true }
     lint {
@@ -23,7 +23,7 @@ android {
     // Compose UI 1.13 needs compileSdk 37.1.
     compileSdk { version = release(37) { minorApiLevel = 1 } }
     defaultConfig {
-        applicationId = "com.adstrosoftware.diceware"
+        applicationId = "dev.adstro.diceware"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

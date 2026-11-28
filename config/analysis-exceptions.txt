@@ -4,8 +4,8 @@
 .codespellrc | codespell:skip:*wordlists/* | 1 | The EFF Word Lists are third-party data whose Words must match the published lists exactly.
 config/detekt.yml | detekt:exceptions.SwallowedException.active=false | 1 | ON HOLD (item 10): decided with the logging design.
 config/detekt.yml | detekt:naming.FunctionNaming.ignoreAnnotated=['Composable'] | 1 | Compose requires PascalCase composables, and its own ComposableNaming check enforces it.
-shared/src/androidHostTest/kotlin/com/adstrosoftware/diceware/LargeWordListMemoryTest.kt | suppress:InjectDispatcher | 1 | The memory test measures a real import on real threads.
-shared/src/androidMain/kotlin/com/adstrosoftware/diceware/SecureRandomBytes.android.kt | suppress:TooGenericExceptionCaught | 1 | Any failure of the secure random source must become "randomness unavailable", never a crash.
-shared/src/commonMain/kotlin/com/adstrosoftware/diceware/EffUpdate.kt | suppress:TooGenericExceptionCaught | 1 | Each HTTP engine throws its own types for network failures, and every one of them means Offline.
-shared/src/commonMain/kotlin/com/adstrosoftware/diceware/WordListLibrary.kt | suppress:TooGenericExceptionCaught | 1 | Opening a shared file also throws security and argument errors on Android; each must become Unreadable, not a crash.
-shared/src/commonMain/kotlin/com/adstrosoftware/diceware/WordListLibrary.kt | suppress:TooManyFunctions | 1 | One public function per Word Lists action: the single front door for that screen.
+shared/src/androidHostTest/kotlin/dev/adstro/diceware/LargeWordListMemoryTest.kt | suppress:InjectDispatcher | 1 | The memory test measures a real import on real threads.
+shared/src/androidMain/kotlin/dev/adstro/diceware/SecureRandomBytes.android.kt | suppress:TooGenericExceptionCaught | 1 | Any failure of the secure random source must become "randomness unavailable", never a crash.
+shared/src/commonMain/kotlin/dev/adstro/diceware/EffUpdate.kt | suppress:TooGenericExceptionCaught | 1 | Each HTTP engine throws its own types for network failures, and every one of them means Offline.
+shared/src/commonMain/kotlin/dev/adstro/diceware/WordListLibrary.kt | suppress:TooGenericExceptionCaught | 1 | Opening a shared file also throws security and argument errors on Android; each must become Unreadable, not a crash.
+shared/src/commonMain/kotlin/dev/adstro/diceware/WordListLibrary.kt | suppress:TooManyFunctions | 1 | One public function per Word Lists action: the single front door for that screen.

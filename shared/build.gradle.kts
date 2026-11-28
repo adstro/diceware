@@ -27,7 +27,7 @@ kotlin {
     // Kotlin compiler warnings fail the build, as Swift ones do on iOS.
     compilerOptions { allWarningsAsErrors = true }
     android {
-        namespace = "com.adstrosoftware.diceware.shared"
+        namespace = "dev.adstro.diceware.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
