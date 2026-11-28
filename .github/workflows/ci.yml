@@ -36,9 +36,9 @@ jobs:
       - name: Static analysis (detekt, Android Lint)
         run: >-
           ./gradlew detekt :shared:detektMainAndroid :shared:detektHostTestAndroid
-          :androidApp:detektDebug :androidApp:detektDebugUnitTest :androidApp:lintDebug :androidApp:lintRelease
+          :androidApp:detektProdDebug :androidApp:detektProdDebugUnitTest :androidApp:lintProdDebug :androidApp:lintProdRelease
       - name: Tests and coverage minimums (Kover)
-        run: ./gradlew :shared:koverVerifyAndroid :androidApp:koverVerifyDebug :androidApp:assembleDebug
+        run: ./gradlew :shared:koverVerifyAndroid :androidApp:koverVerifyProdDebug :androidApp:assembleProdDebug :androidApp:assembleBetaRelease
 
   ios:
     name: Core (iOS) + iOS app

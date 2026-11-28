@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // Navigation 3 saves its back stack of @Serializable keys.
     alias(libs.plugins.kotlin.serialization)
-    // Type-resolved detekt (detektDebug): the Compose and coroutine rules that need types.
+    // Type-resolved detekt (detektProdDebug): the Compose and coroutine rules that need types.
     alias(libs.plugins.detekt)
     alias(libs.plugins.kover)
 }
@@ -29,6 +29,15 @@ android {
         versionCode = 1
         versionName = "0.1"
     }
+    flavorDimensions += "channel"
+    productFlavors {
+        create("prod") { dimension = "channel" }
+        // A separate app ID so beta installs beside prod and its crash reports stay apart.
+        create("beta") {
+            dimension = "channel"
+            applicationIdSuffix = ".beta"
+        }
+    }
     // The bundled EFF Word Lists live once at the repo root and are shared with iOS.
     sourceSets.getByName("main").assets.directories.add("../wordlists")
     buildFeatures { compose = true }
@@ -36,7 +45,7 @@ android {
 }
 
 // Line coverage of the app from its unit tests may not drop below today's level.
-kover { reports { variant("debug") { verify { rule { minBound(89) } } } } }
+kover { reports { variant("prodDebug") { verify { rule { minBound(89) } } } } }
 
 kotlin {
     jvmToolchain(21)

@@ -1,9 +1,15 @@
 name: iosApp
 options:
   bundleIdPrefix: dev.adstro
+  defaultConfig: Release
   developmentLanguage: en-US
   deploymentTarget:
     iOS: "17.0"
+configs:
+  Debug: debug
+  Release: release
+  BetaDebug: debug
+  BetaRelease: release
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -43,6 +49,16 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         TARGETED_DEVICE_FAMILY: "1,2"
         FRAMEWORK_SEARCH_PATHS: ["$(inherited)", "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"]
+      # A separate bundle ID so beta installs beside prod and its crash reports stay apart.
+      configs:
+        BetaDebug:
+          PRODUCT_BUNDLE_IDENTIFIER: dev.adstro.diceware.beta
+          INFOPLIST_KEY_CFBundleDisplayName: Diceware Beta
+          KOTLIN_FRAMEWORK_BUILD_TYPE: debug
+        BetaRelease:
+          PRODUCT_BUNDLE_IDENTIFIER: dev.adstro.diceware.beta
+          INFOPLIST_KEY_CFBundleDisplayName: Diceware Beta
+          KOTLIN_FRAMEWORK_BUILD_TYPE: release
     preBuildScripts:
       - name: Compile Kotlin Framework
         basedOnDependencyAnalysis: false
@@ -71,3 +87,15 @@ schemes:
         iosAppTests: [test]
     test:
       targets: [iosAppTests]
+  iosApp Beta:
+    build:
+      targets:
+        iosApp: all
+    run:
+      config: BetaDebug
+    profile:
+      config: BetaRelease
+    analyze:
+      config: BetaDebug
+    archive:
+      config: BetaRelease
